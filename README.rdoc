@@ -10,14 +10,17 @@
       # following attibutes are optional
       host fluenter
       port 10000
+
+      # Other buffer configurations here
     </match>
 
 == TODO
 
-=== TimeSlicedOutput version
+=== More configuration
 
-Currently, MemoryBufferChunk requires String object.
-But, Mongo client can push event-record to server directory.
+- Create Capped Collection
+- Create Index
+- etc
 
 === Infer collection name
 

@@ -1,12 +1,13 @@
 module Fluent
 
 
-class MongoOutput < Output
+class MongoOutput < BufferedOutput
   Fluent::Plugin.register_output('mongo', self)
 
   def initialize
     super
     require 'mongo'
+    require 'msgpack'
   end
 
   def configure(conf)
@@ -29,12 +30,20 @@ class MongoOutput < Output
     @collection.db.connection.close
   end
 
-  def emit(tag, event_stream, chain)
-    event_stream.each { |event|
-      @collection.insert(event.record)
-    }
+  def format(tag, event)
+    event.record.to_msgpack
+  end
 
-    chain.next
+  def write(chunk)
+    records = []
+    chunk.open { |io|
+      begin
+        MessagePack::Unpacker.new(io).each { |record| records << record }
+      rescue EOFError
+        # EOFError always occured when reached end of chunk.
+      end
+    }
+    @collection.insert(records)
   end
 end
 
