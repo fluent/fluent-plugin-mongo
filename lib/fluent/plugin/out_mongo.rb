@@ -13,8 +13,8 @@ class MongoOutput < BufferedOutput
   def configure(conf)
     super
 
-    raise ConfigError, "'database' parameter is required on file output"   unless @database = conf['database']
-    raise ConfigError, "'collection' parameter is required on file output" unless @collection = conf['collection']
+    raise ConfigError, "'database' parameter is required on Mongo output"   unless @database = conf['database']
+    raise ConfigError, "'collection' parameter is required on Mongo output" unless @collection = conf['collection']
 
     @host = conf.has_key?('host') ? conf['host'] : 'localhost'
     @port = conf.has_key?('port') ? conf['port'] : 27017
