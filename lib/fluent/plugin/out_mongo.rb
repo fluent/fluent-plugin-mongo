@@ -22,12 +22,13 @@ class MongoOutput < BufferedOutput
 
   def start
     super
-    @collection = Mongo::Connection.new(@host, @port).db(@database).collection(@collection)
+    @mongo = Mongo::Connection.new(@host, @port).db(@database).collection(@collection)
   end
 
   def shutdown
     # Mongo::Connection checks alive or closed myself
-    @collection.db.connection.close
+    @mongo.db.connection.close
+    super
   end
 
   def format(tag, event)
@@ -43,7 +44,7 @@ class MongoOutput < BufferedOutput
         # EOFError always occured when reached end of chunk.
       end
     }
-    @collection.insert(records)
+    @mongo.insert(records)
   end
 end
 
