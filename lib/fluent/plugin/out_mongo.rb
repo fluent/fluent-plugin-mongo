@@ -16,8 +16,9 @@ class MongoOutput < BufferedOutput
     raise ConfigError, "'database' parameter is required on Mongo output"   unless @database_name = conf['database']
     raise ConfigError, "'collection' parameter is required on Mongo output" unless @collection_name = conf['collection']
 
-    @host = conf.has_key?('host') ? conf['host'] : 'localhost'
-    @port = conf.has_key?('port') ? conf['port'] : 27017
+    @host = conf['host'] || 'localhost'
+    @port = conf['port'] || 27017
+    @port = Integer(@port)
   end
 
   def start

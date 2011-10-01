@@ -23,7 +23,8 @@ class MongoBuffer < MemoryBuffer
     @database_name = conf['mongo_buffer_database'] || 'fluent'
     @collection_name = conf['mongo_buffer_collection'] || '__buffer'
     @host = conf['mongo_buffer_host'] || 'localhost'
-    @port = Integer(conf['mongo_buffer_port']) || 27017
+    @port = conf['mongo_buffer_port'] || 27017
+    @port = Integer(@port)
   end
 
   def start
