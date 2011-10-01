@@ -1,6 +1,6 @@
 = MongoDB output plugin for Fluent
 
-== Compoentn
+== Component
 
 === MongoOutput
 
