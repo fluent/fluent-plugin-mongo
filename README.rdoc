@@ -1,6 +1,18 @@
 = MongoDB output plugin for Fluent
 
+== Compoentn
+
+=== MongoOutput
+
+Output to MongoDB database.
+
+=== MongoBuffer
+
+Output to MongoDB capped collection before buffering.
+
 == Configuratin
+
+=== MongoOutput
 
     <match mongo.**>
       type mongo
@@ -12,6 +24,22 @@
       port 10000
 
       # Other buffer configurations here
+    </match>
+
+=== MongoBuffer
+
+    <match mongo.**>
+      # ... output configurations
+
+      buffer_type mongo
+      mongo_buffer_size 100000
+
+      # following attibutes are optional
+      mongo_buffer_max 100
+      mongo_buffer_host fluenter2
+      mongo_buffer_port 10000
+      mongo_buffer_database fluent2
+      mongo_buffer_collection __buffer2
     </match>
 
 == TODO
