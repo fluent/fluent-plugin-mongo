@@ -6,10 +6,6 @@
 
 Output to MongoDB database.
 
-=== MongoBuffer
-
-Output to MongoDB capped collection before buffering.
-
 == Configuratin
 
 === MongoOutput
@@ -26,20 +22,19 @@ Output to MongoDB capped collection before buffering.
       # Other buffer configurations here
     </match>
 
-=== MongoBuffer
+=== Backup to local capped collection
+
+Use <store> section.
 
     <match mongo.**>
-      # ... output configurations
+      type mongo
+      database fluent
+      collection test
 
-      buffer_type mongo
-      mongo_buffer_size 100000
-
-      # following attibutes are optional
-      mongo_buffer_max 100
-      mongo_buffer_host fluenter2
-      mongo_buffer_port 10000
-      mongo_buffer_database fluent2
-      mongo_buffer_collection __buffer2
+      <store>
+        size 100000
+        max  1000
+      </store>
     </match>
 
 == TODO
