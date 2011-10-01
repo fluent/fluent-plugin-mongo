@@ -13,8 +13,8 @@ class MongoOutput < BufferedOutput
   def configure(conf)
     super
 
-    raise ConfigError, "'database' parameter is required on Mongo output"   unless @database = conf['database']
-    raise ConfigError, "'collection' parameter is required on Mongo output" unless @collection = conf['collection']
+    raise ConfigError, "'database' parameter is required on Mongo output"   unless @database_name = conf['database']
+    raise ConfigError, "'collection' parameter is required on Mongo output" unless @collection_name = conf['collection']
 
     @host = conf.has_key?('host') ? conf['host'] : 'localhost'
     @port = conf.has_key?('port') ? conf['port'] : 27017
@@ -22,12 +22,12 @@ class MongoOutput < BufferedOutput
 
   def start
     super
-    @mongo = Mongo::Connection.new(@host, @port).db(@database).collection(@collection)
+    @collection = Mongo::Connection.new(@host, @port).db(@database_name).collection(@collection_name)
   end
 
   def shutdown
     # Mongo::Connection checks alive or closed myself
-    @mongo.db.connection.close
+    @collection.db.connection.close
     super
   end
 
@@ -44,7 +44,7 @@ class MongoOutput < BufferedOutput
         # EOFError always occured when reached end of chunk.
       end
     }
-    @mongo.insert(records)
+    @collection.insert(records)
   end
 end
 
