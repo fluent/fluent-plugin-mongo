@@ -28,6 +28,8 @@ class MongoOutput < BufferedOutput
       @capped_collection_name = capped_conf['collection'] || '__backup'
       @capped_host, @capped_port = host_and_port(capped_conf)
     end
+
+    @backuped = false
   end
 
   def start
@@ -57,8 +59,13 @@ class MongoOutput < BufferedOutput
       end
     }
 
-    @capped.insert(records) unless @capped.nil?
+    unless @backuped or @capped.nil?
+      @capped.insert(records)
+      @backuped = true
+    end
+
     @collection.insert(records)
+    @backuped = false
   end
 
   private
