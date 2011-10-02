@@ -8,40 +8,38 @@ class MongoOutput < BufferedOutput
     super
     require 'mongo'
     require 'msgpack'
+
+    # Sub-class can overwrite following parameters
+    @database_name = nil
+    @collection_name = nil
   end
 
   def configure(conf)
     super
 
-    raise ConfigError, "'database' parameter is required on Mongo output"   unless @database_name = conf['database']
-    raise ConfigError, "'collection' parameter is required on Mongo output" unless @collection_name = conf['collection']
+    @database_name = conf['database'] if conf.has_key?('database')
+    @collection_name = conf['collection'] if conf.has_key?('collection')
+    raise ConfigError, "'database' and 'collection' parameter is required on mongo output" if @database_name.nil? || @collection_name.nil?
     @host, @port = host_and_port(conf)
 
     # capped configuration
-    if capped_conf = conf.elements.first
-      raise ConfigError, "'size' parameter is required on <store> of Mongo output" unless capped_conf.has_key?('size')
-      @capped_argument = {:capped => true}
-      @capped_argument[:size] = Integer(capped_conf['size'])
-      @capped_argument[:max]  = Integer(capped_conf['max']) if capped_conf.has_key?('max')
-
-      @capped_database_name = capped_conf['database'] || 'fluent'
-      @capped_collection_name = capped_conf['collection'] || '__backup'
-      @capped_host, @capped_port = host_and_port(capped_conf)
+    @argument = {:capped => false}
+    if conf['capped']
+      raise ConfigError, "'capped_size' parameter is required on <store> of Mongo output" unless conf.has_key?('capped_size')
+      @argument[:capped] = true
+      @argument[:size] = Config.size_value(conf['capped_size'])
+      @argument[:max] = Config.size_value(conf['capped_max']) if conf.has_key?('capped_max')
     end
-
-    @backuped = false
   end
 
   def start
     super
-    @collection = Mongo::Connection.new(@host, @port).db(@database_name).collection(@collection_name)
-    @capped = capped_collection unless @capped_argument.nil?
+    @collection = get_or_create_collection #Mongo::Connection.new(@host, @port).db(@database_name).collection(@collection_name)
   end
 
   def shutdown
     # Mongo::Connection checks alive or closed myself
     @collection.db.connection.close
-    @capped.db.connection.close unless @capped.nil?
     super
   end
 
@@ -59,13 +57,7 @@ class MongoOutput < BufferedOutput
       end
     }
 
-    unless @backuped or @capped.nil?
-      @capped.insert(records)
-      @backuped = true
-    end
-
     @collection.insert(records)
-    @backuped = false
   end
 
   private
@@ -76,14 +68,17 @@ class MongoOutput < BufferedOutput
     [host, Integer(port)]
   end
 
-  def capped_collection
-    db = Mongo::Connection.new(@capped_host, @capped_port).db(@capped_database_name)
-    if db.collection_names.include?(@capped_collection_name)
-      # TODO: Verify capped configuraton
-      db.collection(@capped_collection_name)
-    else
-      db.create_collection(@capped_collection_name, @capped_argument)
+  def get_or_create_collection
+    db = Mongo::Connection.new(@host, @port).db(@database_name)
+    if db.collection_names.include?(@collection_name)
+      collection = db.collection(@collection_name)
+      return collection if @argument[:capped] == collection.capped? # TODO: Verify capped configuration
+
+      # Drop if old collection does not match lastest configuration
+      collection.drop
     end
+
+    db.create_collection(@collection_name, @argument)
   end
 end
 
