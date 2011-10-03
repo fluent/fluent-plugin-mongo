@@ -74,8 +74,8 @@ class MongoOutput < BufferedOutput
       collection = db.collection(@collection_name)
       return collection if @argument[:capped] == collection.capped? # TODO: Verify capped configuration
 
-      # Drop if old collection does not match lastest configuration
-      collection.drop
+      # raise Exception if old collection does not match lastest configuration
+      raise ConfigError, "New configuration is different from existing collection"
     end
 
     db.create_collection(@collection_name, @argument)

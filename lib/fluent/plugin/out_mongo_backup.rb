@@ -14,7 +14,7 @@ class MongoBackupOutput < CopyOutput
 
       # default parameters
       @database_name = 'fluent'
-      @collection_name = '__backup'
+      @collection_name = 'out_mongo_backup'
     end
   end
 
