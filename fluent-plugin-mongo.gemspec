@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{fluent-plugin-mongo}
-  s.version = "0.2.1"
+  s.version = "0.3.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Masahiro Nakagawa"]
-  s.date = %q{2011-10-02}
+  s.date = %q{2011-10-03}
   s.email = %q{repeatedly@gmail.com}
   s.extra_rdoc_files = [
     "README.rdoc"
@@ -18,7 +18,8 @@ Gem::Specification.new do |s|
     "AUTHORS",
     "Rakefile",
     "VERSION",
-    "lib/fluent/plugin/out_mongo.rb"
+    "lib/fluent/plugin/out_mongo.rb",
+    "lib/fluent/plugin/out_mongo_backup.rb"
   ]
   s.homepage = %q{http://github.com/fluent}
   s.require_paths = ["lib"]
