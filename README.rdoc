@@ -4,7 +4,11 @@
 
 === MongoOutput
 
-Output to MongoDB database.
+Store fluent-event as MongoDB Document to MongoDB database.
+
+=== MongoBackup
+
+Store fluent-event to capped collection for backup.
 
 == Configuratin
 
@@ -19,21 +23,25 @@ Output to MongoDB database.
       host fluenter
       port 10000
 
+      # You can use 'capped' if you want to use capped collection
+      capped
+      capped_size 100m
+
       # Other buffer configurations here
     </match>
 
 === Backup to local capped collection
 
-Use <store> section.
+Use mongo_backup type. mongo_backup alwalys use capped collection.
 
-    <match mongo.**>
-      type mongo
-      database fluent
-      collection test
+    <match ...>
+      type mongo_backup
+      capped_size 100m
 
       <store>
-        size 100000
-        max  1000
+        type tcp
+        host 192.168.0.13
+        ...
       </store>
     </match>
 
@@ -41,8 +49,8 @@ Use <store> section.
 
 === More configuration
 
-- Create Capped Collection
 - Create Index
+- Select insert or update
 - etc
 
 === Infer collection name
