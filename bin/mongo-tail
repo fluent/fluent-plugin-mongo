@@ -1,0 +1,82 @@
+#!/usr/bin/env ruby
+
+# tail like CLI for mongo capped collection
+
+require 'optparse'
+require 'json'
+
+require 'mongo'
+
+TailConfig = {
+  :d => 'fluent',
+  :c => 'out_mongo_backup',
+  :h => 'localhost',
+  :p => 27017,
+  :n => 10
+}
+
+OptionParser.new { |opt|
+  opt.on('-d VAL', 'The name of database') { |v| TailConfig[:d] = v }
+  opt.on('-c VAL', 'The name of collection') { |v| TailConfig[:c] = v }
+  opt.on('-h VAL', 'The host of mongodb server') { |v| TailConfig[:h] = v }
+  opt.on('-p VAL', 'The port of mongodb server') { |v| TailConfig[:p] = Integer(v) }
+  opt.on('-n VAL', 'The number of documents') { |v| TailConfig[:n] = Integer(v) }
+  opt.on('-f', 'This option causes tail to not stop when end of file is reached, but rather to wait for additional data to be appended to the input') { |v|
+    TailConfig[:f] = true
+  }
+
+  opt.parse!(ARGV)
+}
+
+def get_capped_collection(conf)
+  db = Mongo::Connection.new(conf[:h], conf[:p]).db(conf[:d])
+  if db.collection_names.include?(conf[:c])
+    collection = db.collection(conf[:c])
+    if collection.capped?
+      collection
+    else
+      puts "#{conf[:c]} is not capped. mongo-tail can not tail normal collection."
+    end
+  else
+    puts "#{conf[:c]} not found: server = #{conf[:h]}:#{conf[:p]}"
+  end
+end
+
+def create_cursor_conf(collection, conf)
+  skip = collection.count - conf[:n]
+  cursor_conf = {}
+  cursor_conf[:skip] = skip if skip > 0
+  cursor_conf
+end
+
+def tail_n(collection, conf)
+  collection.find({}, create_cursor_conf(collection, conf)).each { |doc|
+    puts doc.to_json
+  }
+end
+
+def tail_forever(collection, conf)
+  cursor_conf = create_cursor_conf(collection, conf)
+  cursor_conf[:tailable] = true
+
+  cursor = Mongo::Cursor.new(collection, cursor_conf)
+  loop {
+    cursor = Mongo::Cursor.new(collection, cursor_conf) unless cursor.alive?
+
+    if doc = cursor.next_document
+      puts doc.to_json
+    else
+      sleep 1
+    end
+  }
+rescue
+  # ignore Mongo::OperationFailuer at CURSOR_NOT_FOUND
+end
+
+exit unless collection = get_capped_collection(TailConfig)
+
+if TailConfig[:f]
+  tail_forever(collection, TailConfig)
+else
+  tail_n(collection, TailConfig)
+end
