@@ -21,7 +21,7 @@ OptionParser.new { |opt|
   opt.on('-h VAL', 'The host of mongodb server') { |v| TailConfig[:h] = v }
   opt.on('-p VAL', 'The port of mongodb server') { |v| TailConfig[:p] = Integer(v) }
   opt.on('-n VAL', 'The number of documents') { |v| TailConfig[:n] = Integer(v) }
-  opt.on('-f', 'This option causes tail to not stop when end of file is reached, but rather to wait for additional data to be appended to the input') { |v|
+  opt.on('-f', 'This option causes tail to not stop when end of collection is reached, but rather to wait for additional data to be appended to the collection') { |v|
     TailConfig[:f] = true
   }
 
@@ -61,6 +61,7 @@ def tail_forever(collection, conf)
 
   cursor = Mongo::Cursor.new(collection, cursor_conf)
   loop {
+    # TODO: Check more detail of cursor state if needed
     cursor = Mongo::Cursor.new(collection, cursor_conf) unless cursor.alive?
 
     if doc = cursor.next_document
