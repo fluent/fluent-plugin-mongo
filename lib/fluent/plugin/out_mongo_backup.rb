@@ -9,13 +9,10 @@ class MongoBackupOutput < CopyOutput
   Fluent::Plugin.register_output('mongo_backup', self)
 
   class MongoOutputForBackup < MongoOutput
-    def initialize
-      super
+    config_param :database, :string, :default => 'fluent'
+    config_param :collection, :string, :default => 'out_mongo_backup'
 
-      # default parameters
-      @database_name = 'fluent'
-      @collection_name = 'out_mongo_backup'
-    end
+    # TODO: optimize
   end
 
   def configure(conf)

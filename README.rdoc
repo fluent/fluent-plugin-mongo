@@ -6,6 +6,9 @@
 
 Store fluent-event as MongoDB Document to MongoDB database.
 
+MongoOutput set 'time' field to a document by default.
+You set -false- to 'include_time_key' parameter if you disable this behaivor.
+
 === MongoBackup
 
 Store fluent-event to capped collection for backup.
