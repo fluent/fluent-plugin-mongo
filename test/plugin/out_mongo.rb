@@ -79,8 +79,8 @@ class MongoOutputTest < Test::Unit::TestCase
 
   def test_write_at_enable_tag
     d = create_driver(CONFIG + %[
-        include_tag_key true
-        include_time_key false
+      include_tag_key true
+      include_time_key false
     ])
     t = emit_documents(d)
 

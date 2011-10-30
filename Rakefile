@@ -1,32 +1,12 @@
-require 'rake'
+require 'bundler'
+Bundler::GemHelper.install_tasks
+
 require 'rake/testtask'
-require 'rake/clean'
 
-begin
-  require 'jeweler'
-  Jeweler::Tasks.new do |gemspec|
-    gemspec.name = "fluent-plugin-mongo"
-    gemspec.summary = "MongoDB output plugin for Fluent event collector"
-    gemspec.author = "Masahiro Nakagawa"
-    gemspec.email = "repeatedly@gmail.com"
-    gemspec.homepage = "http://github.com/fluent"
-    gemspec.has_rdoc = false
-    gemspec.require_paths = ["lib"]
-    gemspec.add_dependency "fluentd", "~> 0.10.1"
-    gemspec.add_dependency "mongo", ">= 1.2.0"
-    gemspec.test_files = Dir["test/**/*.rb"]
-    gemspec.files = Dir["bin/**/*", "lib/**/*", "test/**/*.rb"] + %w[VERSION AUTHORS Rakefile]
-    gemspec.executables = []
-  end
-  Jeweler::GemcutterTasks.new
-rescue LoadError
-  puts "Jeweler not available. Install it with: gem install jeweler"
-end
-
-Rake::TestTask.new(:test) do |t|
-  t.test_files = Dir['test/*_test.rb']
-  t.ruby_opts = ['-rubygems'] if defined? Gem
-  t.ruby_opts << '-I.'
+Rake::TestTask.new(:test) do |test|
+  test.libs << 'lib' << 'test'
+  test.test_files = FileList['test/plugin/*.rb']
+  test.verbose = true
 end
 
 task :default => [:build]
