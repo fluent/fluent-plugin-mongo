@@ -1,2 +1,5 @@
 /fluent/
 /pkg/
+/coverage/
+/vendor/
+Gemfile.lock

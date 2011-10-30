@@ -9,4 +9,9 @@ Rake::TestTask.new(:test) do |test|
   test.verbose = true
 end
 
+task :coverage do |t|
+  ENV['SIMPLE_COV'] = '1'
+  Rake::Task["test"].invoke
+end
+
 task :default => [:build]

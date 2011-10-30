@@ -1,5 +1,4 @@
-require 'test/unit'
-require 'fluent/test'
+require 'test_helper'
 
 class MongoOutputTest < Test::Unit::TestCase
   def setup
