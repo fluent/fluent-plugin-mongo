@@ -64,12 +64,11 @@ class MongoOutput < BufferedOutput
   end
 
   def write(chunk)
-    result = if @tag_collection_mapping
+    if @tag_collection_mapping
       write_with_tags(chunk)
     else
       write_without_tags(chunk)
     end
-    result
   end
 
   def write_without_tags(chunk)
