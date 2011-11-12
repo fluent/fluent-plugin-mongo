@@ -13,6 +13,10 @@ You set -false- to 'include_time_key' parameter if you disable this behaivor.
 
 Store fluent-event to capped collection for backup.
 
+=== MongoTailInput
+
+Tail capped collection.
+
 == Configuratin
 
 === MongoOutput
@@ -22,7 +26,7 @@ Store fluent-event to capped collection for backup.
       database fluent
       collection test
 
-      # following attibutes are optional
+      # Following attibutes are optional
       host fluenter
       port 10000
 
@@ -35,7 +39,7 @@ Store fluent-event to capped collection for backup.
 
 === Backup to local capped collection
 
-Use mongo_backup type. mongo_backup alwalys use capped collection.
+Use mongo_backup type in match. mongo_backup alwalys use capped collection.
 
     <match ...>
       type mongo_backup
@@ -47,6 +51,24 @@ Use mongo_backup type. mongo_backup alwalys use capped collection.
         ...
       </store>
     </match>
+
+=== Tail capped collection
+
+Use mongo_tail type in source. 
+
+    <source>
+      type mongo_tail
+      database fluent
+      collection capped_log
+
+      tag app.mongo_log
+
+      # Convert 'time'(BSON's time) to fluent time(Unix time).
+      time_key time
+
+      # You can store last ObjectId to tail over server's shutdown
+      id_store_file /Users/repeatedly/devel/fluent-plugin-mongo/last_id
+    </source>
 
 == TODO
 

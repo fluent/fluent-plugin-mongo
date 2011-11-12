@@ -14,8 +14,12 @@ class MongoTailInput < Input
   config_param :time_key, :string, :default => nil
   config_param :time_format, :string, :default => nil
 
+  # To store last ObjectID
+  config_param :id_store_file, :string, :default => nil
+
   def initialize
     require 'mongo'
+    require 'bson'
     super
   end
 
@@ -25,24 +29,31 @@ class MongoTailInput < Input
     if !@tag && !@tag_key
       raise ConfigError, "'tag' or 'tag_key' option is required on mongo_tail input"
     end
+
+    @last_id = @id_store_file ? get_last_id : nil
   end
 
   def start
     super
+    @file = get_id_store_file if @id_store_file
     @client = get_capped_collection
     @thread = Thread.new(&method(:run))
   end
 
   def shutdown
+    if @id_store_file
+      save_last_id
+      @file.close
+    end
+
     @thread.join
     @client.db.connection.close
     super
   end
 
   def run
-    last_id = nil
     loop {
-      last_id = tailoop(Mongo::Cursor.new(@client, cursor_conf(last_id)))
+      tailoop(Mongo::Cursor.new(@client, cursor_conf))
     }
   end
 
@@ -57,15 +68,14 @@ class MongoTailInput < Input
   end
 
   def tailoop(cursor)
-    last_id = nil
     loop {
-      cursor = Mongo::Cursor.new(@client, cursor_conf(last_id)) unless cursor.alive?
+      cursor = Mongo::Cursor.new(@client, cursor_conf) unless cursor.alive?
       if doc = cursor.next_document
         time = if @time_key
                  t = doc.delete(@time_key)
-                 t.nil? ? Time.now : t.to_i
+                 t.nil? ? Engine.now : t.to_i
                else
-                 Time.now
+                 Engine.now
                end
         tag = if @tag_key
                 t = doc.delete(@tag_key)
@@ -73,21 +83,48 @@ class MongoTailInput < Input
               else
                 @tag
               end
-        # TODO: Stored to persistent system
-        last_id = doc['_id']
+        if id = doc.delete('_id')
+          @last_id = id.to_s
+          doc['_id_str'] = @last_id
+          save_last_id if @id_store_file
+        end
+
+        # Should use MultiEventStream?
         Engine.emit(tag, time, doc)
+      else
+        sleep 1
       end
     }
   rescue
     # ignore Mongo::OperationFailuer at CURSOR_NOT_FOUND
-    last_id
   end
 
-  def cursor_conf(last_id)
-    cursor_conf = {}
-    cursor_conf[:tailable] = true
-    cursor_conf[:selector] = {'_id' => {'$gt' => last_id}} if last_id
-    cursor_conf
+  def cursor_conf
+    conf = {}
+    conf[:tailable] = true
+    conf[:selector] = {'_id' => {'$gt' => BSON::ObjectId(@last_id)}} if @last_id
+    conf
+  end
+
+  # following methods are used when id_store_file is true
+
+  def get_id_store_file
+    file = File.open(@id_store_file, 'w')
+    file.sync
+    file
+  end
+
+  def get_last_id
+    if File.exist?(@id_store_file)
+      BSON::ObjectId(File.read(@id_store_file)).to_s rescue nil
+    else
+      nil
+    end
+  end
+
+  def save_last_id
+    @file.pos = 0
+    @file.write(@last_id)
   end
 end
 
