@@ -56,41 +56,16 @@ class MongoOutput < BufferedOutput
   end
 
   def format(tag, time, record)
-    if @tag_collection_mapping
-      [tag, record].to_msgpack
-    else
-      record.to_msgpack
-    end
+    record.to_msgpack
   end
 
   def write(chunk)
-    if @tag_collection_mapping
-      write_with_tags(chunk)
-    else
-      write_without_tags(chunk)
-    end
-  end
-
-  def write_without_tags(chunk)
     records = []
     chunk.msgpack_each { |record|
       record[@time_key] = Time.at(record[@time_key]) if @include_time_key
       records << record
     }
     operate(@collection, records)
-  end
-
-  def write_with_tags(chunk)
-    collections = {}
-
-    chunk.msgpack_each { |tag, record|
-      record[@time_key] = Time.at(record[@time_key]) if @include_time_key
-      (collections[tag] ||= []) << record
-    }
-
-    collections.each { |collection_name, records|
-      operate(collection_name, records)
-    }
   end
 
   def format_collection_name(collection_name)
@@ -142,6 +117,5 @@ class MongoOutput < BufferedOutput
     Mongo::Connection.new.db('admin').command('serverStatus' => 1)['version']
   end
 end
-
 
 end
