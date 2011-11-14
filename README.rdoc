@@ -70,6 +70,22 @@ Use mongo_tail type in source.
       id_store_file /Users/repeatedly/devel/fluent-plugin-mongo/last_id
     </source>
 
+=== Tag map to collection
+
+Use mongo_tag_collection type in source.
+
+If tag name is "foo.bar", auto create collection "foo.bar" and insert data.
+
+    <source forward.*>
+      type mongo_tag_collection
+      database fluent
+      collection misc
+
+      # Tag "forward.foo.bar" remove prefix "forward.".
+      # Collection Mapping name is "foo.bar".
+      remove_prefix_collection forward.
+    </source>
+
 == TODO
 
 === More configuration
