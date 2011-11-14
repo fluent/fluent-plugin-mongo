@@ -12,15 +12,6 @@ class MongoOutputTest < Test::Unit::TestCase
     collection test
   ]
 
-  CONFIG_WITH_MAPPING = %[
-    type mongo
-    database fluent
-    collection test
-
-    tag_collection_mapping true
-    remove_prefix_collection should.remove.
-  ]
-
   def create_driver(conf = CONFIG)
     Fluent::Test::BufferedOutputTestDriver.new(Fluent::MongoOutput) {
       def start
@@ -57,12 +48,6 @@ class MongoOutputTest < Test::Unit::TestCase
     assert_equal({:capped => true, :size => 100}, d.instance.argument)
   end
 
-  def test_configure_tag_collection_mapping
-    d = create_driver(CONFIG_WITH_MAPPING)
-    assert_equal(true, d.instance.instance_variable_get(:@tag_collection_mapping))
-    assert_equal(/^should\.remove\./, d.instance.instance_variable_get(:@remove_prefix_collection))
-  end
-
   def test_format
     d = create_driver
 
@@ -90,22 +75,6 @@ class MongoOutputTest < Test::Unit::TestCase
     assert_equal([{'a' => 1, d.instance.time_key => Time.at(t)},
                   {'a' => 2, d.instance.time_key => Time.at(t)}], documents)
     assert_equal('test', collection_name)
-  end
-
-  def test_write_with_tag_collection_mapping
-    d = create_driver(CONFIG_WITH_MAPPING)
-    d.tag = 'mytag'
-    t = emit_documents(d)
-    mock(d.instance).operate('mytag', [{'a' => 1, d.instance.time_key => Time.at(t)},
-                                       {'a' => 2, d.instance.time_key => Time.at(t)}])
-    d.run
-  end
-
-  def test_remove_prefix_collection
-    d = create_driver(CONFIG_WITH_MAPPING)
-    assert_equal('prefix', d.instance.format_collection_name('should.remove.prefix'))
-    assert_equal('test', d.instance.format_collection_name('..test..'))
-    assert_equal('test.foo', d.instance.format_collection_name('..test.foo.'))
   end
 
   def test_write_at_enable_tag

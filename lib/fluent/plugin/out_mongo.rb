@@ -37,12 +37,6 @@ class MongoOutput < BufferedOutput
       @argument[:max] = Config.size_value(conf['capped_max']) if conf.has_key?('capped_max')
     end
 
-    if remove_prefix_collection = conf['remove_prefix_collection']
-      @remove_prefix_collection = Regexp.new('^' + Regexp.escape(remove_prefix_collection))
-    end
-
-    @tag_collection_mapping = Config.bool_value(conf['tag_collection_mapping']) if conf.has_key?('tag_collection_mapping')
-
     # MongoDB uses BSON's Date for time.
     def @timef.format_nocache(time)
       time
@@ -60,41 +54,16 @@ class MongoOutput < BufferedOutput
   end
 
   def format(tag, time, record)
-    if @tag_collection_mapping
-      [tag, record].to_msgpack
-    else
-      record.to_msgpack
-    end
+    record.to_msgpack
   end
 
   def write(chunk)
-    if @tag_collection_mapping
-      write_with_tags(chunk)
-    else
-      write_without_tags(chunk)
-    end
-  end
-
-  def write_without_tags(chunk)
     records = []
     chunk.msgpack_each { |record|
       record[@time_key] = Time.at(record[@time_key]) if @include_time_key
       records << record
     }
     operate(@collection, records)
-  end
-
-  def write_with_tags(chunk)
-    collections = {}
-
-    chunk.msgpack_each { |tag, record|
-      record[@time_key] = Time.at(record[@time_key]) if @include_time_key
-      (collections[tag] ||= []) << record
-    }
-
-    collections.each { |collection_name, records|
-      operate(collection_name, records)
-    }
   end
 
   def format_collection_name(collection_name)
@@ -128,6 +97,5 @@ class MongoOutput < BufferedOutput
     get_or_create_collection(collection_name).insert(records)
   end
 end
-
 
 end
