@@ -22,7 +22,7 @@ class MongoOutputTest < Test::Unit::TestCase
         super
       end
 
-      def operate(records)
+      def operate(collection_name, records)
         records
       end
     }.configure(conf)

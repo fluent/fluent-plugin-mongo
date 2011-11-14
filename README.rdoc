@@ -52,6 +52,21 @@ Use mongo_backup type in match. mongo_backup alwalys use capped collection.
       </store>
     </match>
 
+=== Use tag as collection name
+
+Use "tag_collection [removePrefix]" option instead of the "collection <name>" option.
+
+    <match mongo.**>
+      type mongo
+      database fluent
+
+      # This configuration removes "mongo" prefix from the tag and
+      # use it as the collection name. For example, tag of a record
+      # is "mongo.foo.bar", it insertes the record into "foo.bar" collection.
+      tag_collection mongo
+    </match>
+
+
 === Tail capped collection
 
 Use mongo_tail type in source. 

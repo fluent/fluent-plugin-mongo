@@ -11,7 +11,8 @@ class MongoOutput < BufferedOutput
   config_set_default :include_time_key, true
 
   config_param :database, :string
-  config_param :collection, :string
+  config_param :collection, :string, :default => nil
+  config_param :tag_collection, :string, :default => nil
   config_param :host, :string, :default => 'localhost'
   config_param :port, :integer, :default => 27017
 
@@ -23,10 +24,24 @@ class MongoOutput < BufferedOutput
     require 'msgpack'
 
     @argument = {:capped => false}
+    @collections = {}  # collection_name => Mongo::Collection
   end
 
   def configure(conf)
     super
+
+    if col = @collection
+      @collection_proc = Proc.new {|tag| col }
+    elsif remove_prefix = @tag_collection
+      if remove_prefix.empty?
+        @collection_proc = Proc.new {|tag| tag }
+      else
+        regexp = /^#{Regexp.escape(remove_prefix)}\.?(.*)/
+        @collection_proc = Proc.new {|tag| m = regepx.match(tag) and m[1] }
+      end
+    else
+      raise ConfigError, "'collection' or 'tag_collection' parameter is required on mongo output"
+    end
 
     # capped configuration
     if conf.has_key?('capped')
@@ -44,13 +59,19 @@ class MongoOutput < BufferedOutput
 
   def start
     super
-    @client = get_or_create_collection
+    @client = Mongo::Connection.new(@host, @port).db(@database)
   end
 
   def shutdown
     # Mongo::Connection checks alive or closed myself
-    @client.db.connection.close
+    @client.connection.close
     super
+  end
+
+  def emit(tag, es, chain)
+    if collection_name = @collection_proc.call(tag)
+      super(tag, es, chain, collection_name)
+    end
   end
 
   def format(tag, time, record)
@@ -63,26 +84,29 @@ class MongoOutput < BufferedOutput
       record[@time_key] = Time.at(record[@time_key]) if @include_time_key
       records << record
     }
-    operate(records)
+    operate(chunk.key, records)
   end
 
   private
 
-  def get_or_create_collection
-    db = Mongo::Connection.new(@host, @port).db(@database)
-    if db.collection_names.include?(@collection)
-      collection = db.collection(@collection)
-      return collection if @argument[:capped] == collection.capped? # TODO: Verify capped configuration
-
-      # raise Exception if old collection does not match lastest configuration
-      raise ConfigError, "New configuration is different from existing collection"
+  def get_or_create_collection(collection_name)
+    unless collection = @collections[collection_name]
+      if @client.collection_names.include?(collection_name)
+        collection = @client.collection(collection_name)
+      else
+        collection = @client.create_collection(collection_name, @argument)
+      end
+      @collections[collection_name] = collection
     end
 
-    db.create_collection(@collection, @argument)
+    return collection if @argument[:capped] == collection.capped? # TODO: Verify capped configuration
+
+    # raise Exception if old collection does not match lastest configuration
+    raise ConfigError, "New configuration is different from existing collection"
   end
 
-  def operate(records)
-    @client.insert(records)
+  def operate(collection_name, records)
+    get_or_create_collection(collection_name).insert(records)
   end
 end
 
