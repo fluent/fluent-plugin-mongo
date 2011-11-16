@@ -37,6 +37,8 @@ class MongoOutput < BufferedOutput
       @argument[:max] = Config.size_value(conf['capped_max']) if conf.has_key?('capped_max')
     end
 
+    @buffer.buffer_chunk_limit = available_buffer_chunk_limit
+
     # MongoDB uses BSON's Date for time.
     def @timef.format_nocache(time)
       time
@@ -95,6 +97,24 @@ class MongoOutput < BufferedOutput
 
   def operate(collection_name, records)
     get_or_create_collection(collection_name).insert(records)
+  end
+
+  # Following limits are heuristic. BSON is sometimes bigger than MessagePack and JSON.
+  LIMIT_BEFORE_v1_8 = 2 * 1024 * 1024  # 2MB  = 4MB  / 2
+  LIMIT_AFTER_v1_8 = 10 * 1024 * 1024  # 10MB = 16MB / 2 + alpha
+
+  def available_buffer_chunk_limit
+    limit = mongod_version >= "1.8.0" ? LIMIT_AFTER_v1_8 : LIMIT_BEFORE_v1_8  # TODO: each version comparison
+    if @buffer.buffer_chunk_limit > limit
+      $log.warn ":buffer_chunk_limit(#{@buffer.buffer_chunk_limit}) is large. Reset :buffer_chunk_limit with #{limit}"
+      limit
+    else
+      @buffer.buffer_chunk_limit
+    end
+  end
+
+  def mongod_version
+    Mongo::Connection.new.db('admin').command('serverStatus' => 1)['version']
   end
 end
 
