@@ -25,6 +25,10 @@ class MongoOutputTest < Test::Unit::TestCase
       def operate(records)
         records
       end
+
+      def mongod_version
+        "1.6.0"
+      end
     }.configure(conf)
   end
 
@@ -46,6 +50,7 @@ class MongoOutputTest < Test::Unit::TestCase
     assert_equal('fluenter', d.instance.host)
     assert_equal(27018, d.instance.port)
     assert_equal({:capped => true, :size => 100}, d.instance.argument)
+    assert_equal(Fluent::MongoOutput::LIMIT_BEFORE_v1_8, d.instance.instance_variable_get(:@buffer).buffer_chunk_limit)
   end
 
   def test_format
