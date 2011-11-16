@@ -37,7 +37,7 @@ Tail capped collection.
       # Other buffer configurations here
     </match>
 
-==== NOET
+==== NOTE
 
 MongoDB's output plugins have the limitation of buffer size.
 Because MongoDB and Ruby-Driver checks the total object size at each insertion.
@@ -45,8 +45,8 @@ If total object size gets over the size limitation,
 MongoDB returns error or Ruby-Driver raises an Exception.
 
 So, MongoDB's output plugins reset :buffer_chunk_limit if configurated value is larger than above limitation.
-  - Before v1.8, max of :buffer_chunk_limit is 2MB
-  - After v1.8, max of :buffer_chunk_limit is 10MB
+- Before v1.8, max of :buffer_chunk_limit is 2MB
+- After v1.8, max of :buffer_chunk_limit is 10MB
 
 === Backup to local capped collection
 
