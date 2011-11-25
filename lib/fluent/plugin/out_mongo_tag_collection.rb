@@ -6,6 +6,8 @@ module Fluent
 class MongoOutputTagCollection < MongoOutput
   Fluent::Plugin.register_output('mongo_tag_collection', self)
 
+  config_param :collection, :string, :default => 'untagged'
+
   def configure(conf)
     super
 
