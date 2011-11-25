@@ -1,4 +1,4 @@
-= MongoDB output plugin for Fluent
+= MongoDB plugin for Fluent
 
 == Component
 
@@ -9,15 +9,19 @@ Store fluent-event as MongoDB Document to MongoDB database.
 MongoOutput set 'time' field to a document by default.
 You set -false- to 'include_time_key' parameter if you disable this behaivor.
 
-=== MongoBackup
+=== MongoBackupOutput
 
-Store fluent-event to capped collection for backup.
+Store fluent-event to local capped collection for backup.
+
+=== MongoTagOutputCollection 
+
+Tag mapping to MongoDB collection automatically.
 
 === MongoTailInput
 
-Tail capped collection.
+Tail capped collection to input data.
 
-== Configuratin
+== Configuration
 
 === MongoOutput
 
@@ -31,7 +35,7 @@ Tail capped collection.
       port 10000
 
       # You can use 'capped' if you want to use capped collection
-      capped
+      capped true
       capped_size 100m
 
       # Other buffer configurations here
@@ -48,7 +52,7 @@ So, MongoDB's output plugins reset :buffer_chunk_limit if configurated value is 
 - Before v1.8, max of :buffer_chunk_limit is 2MB
 - After v1.8, max of :buffer_chunk_limit is 10MB
 
-=== Backup to local capped collection
+=== MongoBackupOutput
 
 Use mongo_backup type in match. mongo_backup alwalys use capped collection.
 
@@ -61,6 +65,24 @@ Use mongo_backup type in match. mongo_backup alwalys use capped collection.
         host 192.168.0.13
         ...
       </store>
+    </match>
+
+=== MongoTagOutputCollection
+
+Use mongo_tag_collection type in match.
+
+If tag name is "foo.bar", auto create collection "foo.bar" and insert data.
+
+    <match forward.*>
+      type mongo_tag_collection
+      database fluent
+
+      # This configuration is used if tag not found. Default is 'untagged'
+      collection misc
+
+      # Tag "forward.foo.bar" remove prefix "forward.".
+      # Collection Mapping name is "foo.bar".
+      remove_prefix_collection forward.
     </match>
 
 === Tail capped collection
@@ -81,22 +103,6 @@ Use mongo_tail type in source.
       id_store_file /Users/repeatedly/devel/fluent-plugin-mongo/last_id
     </source>
 
-=== Tag map to collection
-
-Use mongo_tag_collection type in source.
-
-If tag name is "foo.bar", auto create collection "foo.bar" and insert data.
-
-    <source forward.*>
-      type mongo_tag_collection
-      database fluent
-      collection misc
-
-      # Tag "forward.foo.bar" remove prefix "forward.".
-      # Collection Mapping name is "foo.bar".
-      remove_prefix_collection forward.
-    </source>
-
 == TODO
 
 === More configuration
@@ -104,11 +110,6 @@ If tag name is "foo.bar", auto create collection "foo.bar" and insert data.
 - Create Index
 - Select insert or update
 - etc
-
-=== Infer collection name
-
-Fluent tag is similar to database.collection in Mongo.
-This feature makes configuration more easily.
 
 == Tool
 
