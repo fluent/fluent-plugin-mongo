@@ -51,7 +51,7 @@ class MongoOutput < BufferedOutput
 
   def shutdown
     # Mongo::Connection checks alive or closed myself
-    @clients.values.each {|client| client.db.connection.close }
+    @clients.values.each { |client| client.db.connection.close }
     super
   end
 
@@ -72,9 +72,14 @@ class MongoOutput < BufferedOutput
   end
 
   private
+
+  def operate(collection_name, records)
+    get_or_create_collection(collection_name).insert(records)
+  end
+
   def collect_records(chunk)
     records = []
-    chunk.msgpack_each {|record|
+    chunk.msgpack_each { |record|
       record[@time_key] = Time.at(record[@time_key]) if @include_time_key
       records << record
     }
@@ -95,11 +100,8 @@ class MongoOutput < BufferedOutput
     else
       collection = @db.create_collection(collection_name, @argument)
     end
-    @clients[collection_name] = collection
-  end
 
-  def operate(collection_name, records)
-    get_or_create_collection(collection_name).insert(records)
+    @clients[collection_name] = collection
   end
 
   # Following limits are heuristic. BSON is sometimes bigger than MessagePack and JSON.
@@ -120,5 +122,6 @@ class MongoOutput < BufferedOutput
     Mongo::Connection.new.db('admin').command('serverStatus' => 1)['version']
   end
 end
+
 
 end

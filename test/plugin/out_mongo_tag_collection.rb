@@ -8,11 +8,10 @@ class MongoTagCollectionTest < Test::Unit::TestCase
   end
 
   CONFIG = %[
-    type mongo
+    type mongo_tag_collection
     database fluent
     collection test
 
-    tag_collection_mapping true
     remove_prefix_collection should.remove.
   ]
 

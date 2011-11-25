@@ -1,13 +1,14 @@
-
 require 'fluent/plugin/out_mongo'
 
 module Fluent
+
 
 class MongoOutputTagCollection < MongoOutput
   Fluent::Plugin.register_output('mongo_tag_collection', self)
 
   def configure(conf)
     super
+
     if remove_prefix_collection = conf['remove_prefix_collection']
       @remove_prefix_collection = Regexp.new('^' + Regexp.escape(remove_prefix_collection))
     end
@@ -21,5 +22,6 @@ class MongoOutputTagCollection < MongoOutput
     operate(chunk.key, collect_records(chunk))
   end
 end
+
 
 end
