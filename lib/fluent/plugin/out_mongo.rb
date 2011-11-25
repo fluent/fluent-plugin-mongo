@@ -37,7 +37,11 @@ class MongoOutput < BufferedOutput
       @argument[:max] = Config.size_value(conf['capped_max']) if conf.has_key?('capped_max')
     end
 
-    @buffer.buffer_chunk_limit = available_buffer_chunk_limit
+    if @buffer.respond_to?(:buffer_chunk_limit)
+      @buffer.buffer_chunk_limit = available_buffer_chunk_limit
+    else
+      $log.warn "#{Fluent::VERSION} does not have :buffer_chunk_limit. Be careful when insert large documents to MongoDB"
+    end
 
     # MongoDB uses BSON's Date for time.
     def @timef.format_nocache(time)
