@@ -45,6 +45,8 @@ class MongoTagCollectionTest < Test::Unit::TestCase
   end
 
   def test_write
+    skip('BufferedOutputTestDriver should support emit arguments(chain and key)')
+
     d = create_driver(CONFIG)
     d.tag = 'mytag'
     t = emit_documents(d)

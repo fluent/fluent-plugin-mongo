@@ -60,12 +60,7 @@ class MongoOutput < BufferedOutput
   end
 
   def write(chunk)
-    records = []
-    chunk.msgpack_each { |record|
-      record[@time_key] = Time.at(record[@time_key]) if @include_time_key
-      records << record
-    }
-    operate(@collection, records)
+    operate(@collection, collect_records(chunk))
   end
 
   def format_collection_name(collection_name)
@@ -77,6 +72,14 @@ class MongoOutput < BufferedOutput
   end
 
   private
+  def collect_records(chunk)
+    records = []
+    chunk.msgpack_each {|record|
+      record[@time_key] = Time.at(record[@time_key]) if @include_time_key
+      records << record
+    }
+    records
+  end
 
   def get_or_create_collection(collection_name)
     collection_name = format_collection_name(collection_name)
