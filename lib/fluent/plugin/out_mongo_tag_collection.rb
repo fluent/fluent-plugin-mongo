@@ -13,21 +13,12 @@ class MongoOutputTagCollection < MongoOutput
     end
   end
 
-  def format(tag, time, record)
-    [tag, record].to_msgpack
+  def emit(tag, es, chain)
+    super(tag, es, chain, tag)
   end
 
   def write(chunk)
-    collections = {}
-
-    chunk.msgpack_each { |tag, record|
-      record[@time_key] = Time.at(record[@time_key]) if @include_time_key
-      (collections[tag] ||= []) << record
-    }
-
-    collections.each { |collection_name, records|
-      operate(collection_name, records)
-    }
+    operate(chunk.key, collect_records(chunk))
   end
 end
 
