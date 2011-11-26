@@ -9,13 +9,13 @@ Store fluent-event as MongoDB Document to MongoDB database.
 MongoOutput set 'time' field to a document by default.
 You set -false- to 'include_time_key' parameter if you disable this behaivor.
 
+=== MongoOutputTagCollection
+
+Tag mapping to MongoDB collection automatically.
+
 === MongoBackupOutput
 
 Store fluent-event to local capped collection for backup.
-
-=== MongoTagOutputCollection 
-
-Tag mapping to MongoDB collection automatically.
 
 === MongoTailInput
 
@@ -52,22 +52,7 @@ So, MongoDB's output plugins reset :buffer_chunk_limit if configurated value is 
 - Before v1.8, max of :buffer_chunk_limit is 2MB
 - After v1.8, max of :buffer_chunk_limit is 10MB
 
-=== MongoBackupOutput
-
-Use mongo_backup type in match. mongo_backup alwalys use capped collection.
-
-    <match ...>
-      type mongo_backup
-      capped_size 100m
-
-      <store>
-        type tcp
-        host 192.168.0.13
-        ...
-      </store>
-    </match>
-
-=== MongoTagOutputCollection
+=== MongoOutputTagCollection
 
 Use mongo_tag_collection type in match.
 
@@ -83,6 +68,21 @@ If tag name is "foo.bar", auto create collection "foo.bar" and insert data.
       # Tag "forward.foo.bar" remove prefix "forward.".
       # Collection Mapping name is "foo.bar".
       remove_prefix_collection forward.
+    </match>
+
+=== MongoBackupOutput
+
+Use mongo_backup type in match. mongo_backup alwalys use capped collection.
+
+    <match ...>
+      type mongo_backup
+      capped_size 100m
+
+      <store>
+        type tcp
+        host 192.168.0.13
+        ...
+      </store>
     </match>
 
 === Tail capped collection

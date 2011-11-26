@@ -26,7 +26,7 @@ class MongoTailInput < Input
   def configure(conf)
     super
 
-    if !@tag && !@tag_key
+    if !@tag and !@tag_key
       raise ConfigError, "'tag' or 'tag_key' option is required on mongo_tail input"
     end
 

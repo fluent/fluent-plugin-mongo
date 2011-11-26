@@ -18,11 +18,11 @@ class MongoOutput < BufferedOutput
   attr_reader :argument
 
   def initialize
-    @clients = {}
     super
     require 'mongo'
     require 'msgpack'
 
+    @clients = {}
     @argument = {:capped => false}
   end
 

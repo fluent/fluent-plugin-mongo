@@ -3,8 +3,8 @@ $:.push File.expand_path('../lib', __FILE__)
 
 Gem::Specification.new do |gem|
   gem.name        = "fluent-plugin-mongo"
-  gem.description = "MongoDB output plugin for Fluent event collector"
-  gem.homepage    = "http://fluentd.org/"
+  gem.description = "MongoDB plugin for Fluent event collector"
+  gem.homepage    = "https://github.com/fluent/fluent-plugin-mongo"
   gem.summary     = gem.description
   gem.version     = File.read("VERSION").strip
   gem.authors     = ["Masahiro Nakagawa"]
