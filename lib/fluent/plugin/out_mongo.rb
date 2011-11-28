@@ -113,7 +113,16 @@ class MongoOutput < BufferedOutput
   LIMIT_AFTER_v1_8 = 10 * 1024 * 1024  # 10MB = 16MB / 2 + alpha
 
   def available_buffer_chunk_limit
-    limit = mongod_version >= "1.8.0" ? LIMIT_AFTER_v1_8 : LIMIT_BEFORE_v1_8  # TODO: each version comparison
+    begin
+      limit = mongod_version >= "1.8.0" ? LIMIT_AFTER_v1_8 : LIMIT_BEFORE_v1_8  # TODO: each version comparison
+    rescue Mongo::ConnectionFailure => e
+      $log.warn "mongo connection failed, set LIMIT_BEFORE_v1_8"
+      limit = LIMIT_BEFORE_v1_8
+    rescue Exception => e
+      $log.warn "mongo unknown error #{e}, set LIMIT_BEFORE_v1_8"
+      limit = LIMIT_BEFORE_v1_8
+    end
+
     if @buffer.buffer_chunk_limit > limit
       $log.warn ":buffer_chunk_limit(#{@buffer.buffer_chunk_limit}) is large. Reset :buffer_chunk_limit with #{limit}"
       limit
@@ -123,7 +132,7 @@ class MongoOutput < BufferedOutput
   end
 
   def mongod_version
-    Mongo::Connection.new.db('admin').command('serverStatus' => 1)['version']
+    Mongo::Connection.new(@host, @port).db('admin').command('serverStatus' => 1)['version']
   end
 end
 
