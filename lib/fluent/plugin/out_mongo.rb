@@ -116,10 +116,10 @@ class MongoOutput < BufferedOutput
     begin
       limit = mongod_version >= "1.8.0" ? LIMIT_AFTER_v1_8 : LIMIT_BEFORE_v1_8  # TODO: each version comparison
     rescue Mongo::ConnectionFailure => e
-      $log.warn "mongo connection failed, set LIMIT_BEFORE_v1_8"
+      $log.warn "mongo connection failed, set #{LIMIT_BEFORE_v1_8} to chunk limit"
       limit = LIMIT_BEFORE_v1_8
     rescue Exception => e
-      $log.warn "mongo unknown error #{e}, set LIMIT_BEFORE_v1_8"
+      $log.warn "mongo unknown error #{e}, set #{LIMIT_BEFORE_v1_8} to chunk limit"
       limit = LIMIT_BEFORE_v1_8
     end
 
