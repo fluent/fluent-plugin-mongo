@@ -59,8 +59,8 @@ class MongoOutputTest < Test::Unit::TestCase
     time = Time.parse("2011-01-02 13:14:15 UTC").to_i
     d.emit({'a' => 1}, time)
     d.emit({'a' => 2}, time)
-    d.expect_format({'a' => 1, d.instance.time_key => time}.to_msgpack)
-    d.expect_format({'a' => 2, d.instance.time_key => time}.to_msgpack)
+    d.expect_format([time, {'a' => 1, d.instance.time_key => time}].to_msgpack)
+    d.expect_format([time, {'a' => 2, d.instance.time_key => time}].to_msgpack)
 
     d.run
   end
