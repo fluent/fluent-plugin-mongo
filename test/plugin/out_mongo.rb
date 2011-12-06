@@ -1,4 +1,7 @@
+# -*- encoding: utf-8 -*-
+
 require 'test_helper'
+require 'nkf'
 
 class MongoOutputTest < Test::Unit::TestCase
   def setup
@@ -93,5 +96,25 @@ class MongoOutputTest < Test::Unit::TestCase
     assert_equal([{'a' => 1, d.instance.tag_key => 'test'},
                   {'a' => 2, d.instance.tag_key => 'test'}], documents)
     assert_equal('test', collection_name)
+  end
+
+  def test_non_utf8_records
+    utf8 = '日本'
+    sjis = NKF.nkf('-s', utf8)
+    now = Time.now
+    records = [
+      {
+        :time => now,
+        :strings => [sjis, utf8]
+      }, {
+      }
+    ]
+    assert_equal([
+      {
+        :time => now,
+        :strings => [utf8, utf8]
+      }, {
+      }
+    ], Fluent::MongoOutput::RecordsToUTF8.to_utf8(records))
   end
 end
