@@ -115,6 +115,29 @@ class MongoOutputTest < Test::Unit::TestCase
         :strings => [utf8, utf8]
       }, {
       }
-    ], Fluent::MongoOutput::RecordsToUTF8.to_utf8(records))
+    ], Fluent::MongoOutput::SafeRecords.bson_safe(records))
+
+    assert_raise(BSON::InvalidStringEncoding) {
+      BSON.serialize({:records => records}, true)
+    }
+
+    assert_nothing_thrown {
+      BSON.serialize({:records => Fluent::MongoOutput::SafeRecords.bson_safe(records)}, true)
+    }
+  end
+
+  def test_invalid_key_records
+    records = [
+      {'a.b'  => 'c'  },
+      {'$foo' => 'bar'}
+    ]
+
+    assert_raise(BSON::InvalidKeyName) {
+      BSON::BSON_RUBY.serialize({:records => records}, true)
+    }
+
+    assert_nothing_thrown {
+      BSON.serialize({:records => Fluent::MongoOutput::SafeRecords.bson_safe(records)}, true)
+    }
   end
 end
