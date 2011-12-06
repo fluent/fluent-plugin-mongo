@@ -1,7 +1,41 @@
+require 'nkf'
+
 module Fluent
 
-
 class MongoOutput < BufferedOutput
+
+  module RecordsToUTF8
+    def to_utf8(records)
+      records.map { |record|
+        convert_utf8_string(record)
+      }
+    end
+
+    def convert_utf8_string(value)
+      case value
+      when Hash
+        result = {}
+        value.each { |key, val|
+          result[convert_utf8_string(key)] = convert_utf8_string(val)
+        }
+        result
+      when Array
+        value.map { |val| convert_utf8_string(val) }
+      when String
+        begin
+          value.unpack('U*')
+          value
+        rescue => e
+          NKF.nkf('-w', value)
+        end
+      else
+        value
+      end
+    end
+
+    extend self
+  end
+
   Fluent::Plugin.register_output('mongo', self)
 
   include SetTagKeyMixin
@@ -78,7 +112,12 @@ class MongoOutput < BufferedOutput
   private
 
   def operate(collection_name, records)
-    get_or_create_collection(collection_name).insert(records)
+    collection = get_or_create_collection(collection_name)
+    begin
+      collection.insert(records)
+    rescue BSON::InvalidStringEncoding => e
+      collection.insert(RecordsToUTF8.to_utf8(records))
+    end
   end
 
   def collect_records(chunk)
