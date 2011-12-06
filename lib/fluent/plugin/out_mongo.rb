@@ -4,32 +4,41 @@ module Fluent
 
 class MongoOutput < BufferedOutput
 
-  module RecordsToUTF8
-    def to_utf8(records)
+  module SafeRecords
+    def bson_safe(records)
       records.map { |record|
-        convert_utf8_string(record)
+        convert_safe_string(record)
       }
     end
 
-    def convert_utf8_string(value)
+    def convert_safe_string(value)
       case value
       when Hash
         result = {}
         value.each { |key, val|
-          result[convert_utf8_string(key)] = convert_utf8_string(val)
+          result[safe_hash_key(convert_safe_string(key))] = convert_safe_string(val)
         }
         result
       when Array
-        value.map { |val| convert_utf8_string(val) }
+        value.map { |val| convert_safe_string(val) }
       when String
         begin
           value.unpack('U*')
           value
         rescue => e
+          # BSON Encording utf8 only
           NKF.nkf('-w', value)
         end
       else
         value
+      end
+    end
+
+    def safe_hash_key(key)
+      if key.kind_of? String
+        key.gsub(/(^\$|\.)/, '_')
+      else
+        key
       end
     end
 
@@ -115,8 +124,8 @@ class MongoOutput < BufferedOutput
     collection = get_or_create_collection(collection_name)
     begin
       collection.insert(records)
-    rescue BSON::InvalidStringEncoding => e
-      collection.insert(RecordsToUTF8.to_utf8(records))
+    rescue BSON::InvalidStringEncoding, BSON::InvalidKeyName => e
+      collection.insert(SafeRecords.bson_safe(records))
     end
   end
 
