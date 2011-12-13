@@ -38,7 +38,7 @@ class MongoOutput < BufferedOutput
       if key.kind_of? String
         key.gsub(/(^\$|\.)/, '_')
       else
-        key
+        safe_hash_key key.to_s
       end
     end
 
@@ -124,7 +124,7 @@ class MongoOutput < BufferedOutput
     collection = get_or_create_collection(collection_name)
     begin
       collection.insert(records)
-    rescue BSON::InvalidStringEncoding, BSON::InvalidKeyName => e
+    rescue BSON::InvalidStringEncoding, BSON::InvalidKeyName, TypeError => e
       collection.insert(SafeRecords.bson_safe(records))
     end
   end

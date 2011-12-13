@@ -2,6 +2,7 @@
 
 require 'test_helper'
 require 'nkf'
+require 'bson'
 
 class MongoOutputTest < Test::Unit::TestCase
   def setup
@@ -104,40 +105,64 @@ class MongoOutputTest < Test::Unit::TestCase
     now = Time.now
     records = [
       {
-        :time => now,
-        :strings => [sjis, utf8]
+        "time" => now,
+        "strings" => [sjis, utf8]
       }, {
       }
     ]
     assert_equal([
       {
-        :time => now,
-        :strings => [utf8, utf8]
+        "time" => now,
+        "strings" => [utf8, utf8]
       }, {
       }
     ], Fluent::MongoOutput::SafeRecords.bson_safe(records))
 
-    assert_raise(BSON::InvalidStringEncoding) {
-      BSON.serialize({:records => records}, true)
-    }
+    [BSON::BSON_C, BSON::BSON_RUBY].each do |bson|
+      assert_raise(BSON::InvalidStringEncoding) {
+        bson.serialize({:records => records}, true)
+      }
 
-    assert_nothing_thrown {
-      BSON.serialize({:records => Fluent::MongoOutput::SafeRecords.bson_safe(records)}, true)
-    }
+      assert_nothing_thrown {
+        bson.serialize({:records => Fluent::MongoOutput::SafeRecords.bson_safe(records)}, true)
+      }
+    end
   end
 
-  def test_invalid_key_records
+  def test_bson_invalid_key_records
     records = [
+      {''     => 'empty string' },
       {'a.b'  => 'c'  },
       {'$foo' => 'bar'}
     ]
 
-    assert_raise(BSON::InvalidKeyName) {
-      BSON::BSON_RUBY.serialize({:records => records}, true)
-    }
+    [BSON::BSON_C, BSON::BSON_RUBY].each do |bson|
+      assert_raise(BSON::InvalidKeyName) {
+        bson.serialize({:records => records}, true)
+      }
 
-    assert_nothing_thrown {
-      BSON.serialize({:records => Fluent::MongoOutput::SafeRecords.bson_safe(records)}, true)
-    }
+      assert_nothing_thrown {
+        bson.serialize({:records => Fluent::MongoOutput::SafeRecords.bson_safe(records)}, true)
+      }
+    end
+  end
+
+  def test_bson_key_type_error_in_bson_ext
+    empty_string_class = Class.new { def to_s; ''; end }
+
+    records = [
+      {Object.new      => 'obcjet'},
+      {empty_string_class.new => 'empty string class'}
+    ]
+
+    [BSON::BSON_C].each do |bson|
+      assert_raise(TypeError) {
+        bson.serialize({:records => records}, true)
+      }
+
+      assert_nothing_thrown {
+        bson.serialize({:records => Fluent::MongoOutput::SafeRecords.bson_safe(records)}, true)
+      }
+    end
   end
 end
