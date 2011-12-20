@@ -146,8 +146,7 @@ class MongoOutput < BufferedOutput
     if @db.collection_names.include?(collection_name)
       collection = @db.collection(collection_name)
       unless @argument[:capped] == collection.capped? # TODO: Verify capped configuration
-        # raise Exception if old collection does not match lastest configuration
-        raise ConfigError, "New configuration is different from existing collection"
+        $log.warn "#{collection_name} is mismatch config (capped: #{connection.capped?})"
       end
     else
       collection = @db.create_collection(collection_name, @argument)
