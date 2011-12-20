@@ -60,7 +60,7 @@ class MongoOutput < BufferedOutput
   end
 
   def format(tag, time, record)
-    record.to_msgpack
+    [time, record].to_msgpack
   end
 
   def write(chunk)
@@ -83,8 +83,8 @@ class MongoOutput < BufferedOutput
 
   def collect_records(chunk)
     records = []
-    chunk.msgpack_each { |record|
-      record[@time_key] = Time.at(record[@time_key]) if @include_time_key
+    chunk.msgpack_each { |time, record|
+      record[@time_key] = Time.at(time || record[@time_key]) if @include_time_key
       records << record
     }
     records
