@@ -31,6 +31,8 @@ class MongoTailInput < Input
     end
 
     @last_id = @id_store_file ? get_last_id : nil
+
+    $log.debug "Setup mongo_tail configuration: mode = #{@id_store_file ? 'persistent' : 'non-persistent'}"
   end
 
   def start
@@ -61,9 +63,9 @@ class MongoTailInput < Input
 
   def get_capped_collection
     db = Mongo::Connection.new(@host, @port).db(@database)
-    raise ConfigError, "'#{@database}.#{@collection}' not found: server = #{@host}:#{@port}" unless db.collection_names.include?(@collection)
+    raise ConfigError, "'#{@database}.#{@collection}' not found: node = #{@host}:#{@port}" unless db.collection_names.include?(@collection)
     collection = db.collection(@collection)
-    raise ConfigError, "'#{@database}.#{@collection}' is not capped: server = #{@host}:#{@port}" unless collection.capped?
+    raise ConfigError, "'#{@database}.#{@collection}' is not capped: node = #{@host}:#{@port}" unless collection.capped?
     collection
   end
 

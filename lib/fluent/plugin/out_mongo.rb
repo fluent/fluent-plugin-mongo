@@ -54,6 +54,8 @@ class MongoOutput < BufferedOutput
     def @timef.format_nocache(time)
       time
     end
+
+    $log.debug "Setup mongo configuration: mode = #{@remove_prefix_collection ? 'tag mapping' : 'normal'}"
   end
 
   def start

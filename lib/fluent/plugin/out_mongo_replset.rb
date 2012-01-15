@@ -16,7 +16,7 @@ class MongoOutputReplset < MongoOutput
   def configure(conf)
     super
 
-    @nodes = parse_servers(conf['nodes'])
+    @nodes = parse_nodes(conf['nodes'])
     @rs_argument = {}
     if name = conf['name']
       @rs_argument[:name] = conf['name']
@@ -30,6 +30,8 @@ class MongoOutputReplset < MongoOutput
     if refresh_interval = conf['refresh_interval']
       @rs_argument[:refresh_interval] = refresh_interval
     end
+
+    $log.debug "Setup replica set configuration: nodes = #{conf['nodes']}"
   end
 
   private
@@ -41,9 +43,9 @@ class MongoOutputReplset < MongoOutput
     end
   end
 
-  def parse_servers(servers)
-    servers.split(',').map { |server|
-      host, port = server.split(':')
+  def parse_nodes(nodes)
+    nodes.split(',').map { |node|
+      host, port = node.split(':')
       [host, Integer(port)]
     }
   end
