@@ -41,6 +41,26 @@ Tail capped collection to input data.
       # Other buffer configurations here
     </match>
 
+==== Tag collection mapping mode
+
+Use 'remove_prefix_collection' parameter.
+
+If tag name is "foo.bar", auto create collection "foo.bar" and insert data.
+
+    <match forward.*>
+      type mongo
+      database fluent
+
+      # If tag is "forward.foo.bar", then prefix "forward." is removed.
+      # Collection name to insert is "foo.bar".
+      remove_prefix_collection forward.
+
+      # This configuration is used if tag not found. Default is 'untagged'.
+      collection misc
+
+      # Other configurations here
+    </match>
+
 ==== NOTE
 
 MongoDB's output plugins have the limitation of buffer size.
@@ -51,24 +71,6 @@ MongoDB returns error or Ruby-Driver raises an Exception.
 So, MongoDB's output plugins reset :buffer_chunk_limit if configurated value is larger than above limitation.
 - Before v1.8, max of :buffer_chunk_limit is 2MB
 - After v1.8, max of :buffer_chunk_limit is 10MB
-
-=== MongoOutputTagCollection
-
-Use mongo_tag_collection type in match.
-
-If tag name is "foo.bar", auto create collection "foo.bar" and insert data.
-
-    <match forward.*>
-      type mongo_tag_collection
-      database fluent
-
-      # This configuration is used if tag not found. Default is 'untagged'
-      collection misc
-
-      # Tag "forward.foo.bar" remove prefix "forward.".
-      # Collection Mapping name is "foo.bar".
-      remove_prefix_collection forward.
-    </match>
 
 === MongoBackupOutput
 
@@ -107,7 +109,7 @@ Use mongo_tail type in source.
 
 === More configuration
 
-- Create Index
+- Authentication
 - Select insert or update
 - etc
 

@@ -1,4 +1,3 @@
-
 require 'test_helper'
 
 class MongoTagCollectionTest < Test::Unit::TestCase
@@ -8,7 +7,7 @@ class MongoTagCollectionTest < Test::Unit::TestCase
   end
 
   CONFIG = %[
-    type mongo_tag_collection
+    type mongo
     database fluent
     remove_prefix_collection should.remove.
   ]
@@ -54,8 +53,8 @@ class MongoTagCollectionTest < Test::Unit::TestCase
 
   def test_remove_prefix_collection
     d = create_driver(CONFIG)
-    assert_equal('prefix', d.instance.format_collection_name('should.remove.prefix'))
-    assert_equal('test', d.instance.format_collection_name('..test..'))
-    assert_equal('test.foo', d.instance.format_collection_name('..test.foo.'))
+    assert_equal('prefix', d.instance.__send__(:format_collection_name, 'should.remove.prefix'))
+    assert_equal('test', d.instance.__send__(:format_collection_name, '..test..'))
+    assert_equal('test.foo', d.instance.__send__(:format_collection_name, '..test.foo.'))
   end
 end

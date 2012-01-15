@@ -11,9 +11,10 @@ class MongoOutput < BufferedOutput
   config_set_default :include_time_key, true
 
   config_param :database, :string
-  config_param :collection, :string
+  config_param :collection, :string, :default => 'untagged'
   config_param :host, :string, :default => 'localhost'
   config_param :port, :integer, :default => 27017
+  config_param :remove_prefix_collection, :string, :default => nil
 
   attr_reader :argument
 
@@ -28,6 +29,12 @@ class MongoOutput < BufferedOutput
 
   def configure(conf)
     super
+
+    if remove_prefix_collection = conf['remove_prefix_collection']
+      @remove_prefix_collection = Regexp.new('^' + Regexp.escape(remove_prefix_collection))
+    else
+      raise ConfigError, "Normal-mode requires collection parameter" unless conf.has_key?('collection')
+    end
 
     # capped configuration
     if conf.has_key?('capped')
@@ -63,16 +70,19 @@ class MongoOutput < BufferedOutput
     [time, record].to_msgpack
   end
 
-  def write(chunk)
-    operate(@collection, collect_records(chunk))
+  def emit(tag, es, chain)
+    # TODO: Should replacement using eval in configure?
+    if @remove_prefix_collection
+      super(tag, es, chain, tag)
+    else
+      super(tag, es, chain)
+    end
   end
 
-  def format_collection_name(collection_name)
-    formatted = collection_name
-    formatted = formatted.gsub(@remove_prefix_collection, '') if @remove_prefix_collection
-    formatted = formatted.gsub(/(^\.+)|(\.+$)/, '')
-    formatted = @collection if formatted.size == 0 # set default for nil tag
-    formatted
+  def write(chunk)
+    # TODO: See emit comment
+    collection_name = @remove_prefix_collection ? chunk.key : @collection
+    operate(collection_name, collect_records(chunk))
   end
 
   private
@@ -88,6 +98,14 @@ class MongoOutput < BufferedOutput
       records << record
     }
     records
+  end
+
+  def format_collection_name(collection_name)
+    formatted = collection_name
+    formatted = formatted.gsub(@remove_prefix_collection, '') if @remove_prefix_collection
+    formatted = formatted.gsub(/(^\.+)|(\.+$)/, '')
+    formatted = @collection if formatted.size == 0 # set default for nil tag
+    formatted
   end
 
   def get_or_create_collection(collection_name)
