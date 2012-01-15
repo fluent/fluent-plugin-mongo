@@ -66,6 +66,27 @@ If tag name is "foo.bar", auto create collection "foo.bar" and insert data.
 
 ==== NOTE
 
+===== Broken data as a BSON
+
+Fluentd event sometimes has an invalid record as a BSON.
+In such case, mongo plugin marshals an invalid record using Marshal.dump
+and re-inserts its to same collection.
+
+Example:
+
+    {"key1": "invalid value", "key2": "valid value", "time": ISODate("2012-01-15T21:09:53Z") }
+
+to
+
+    {"__broken_data": "Marshal.dump result", "time": ISODate("2012-01-15T21:09:53Z") }
+
+mongo-ruby-driver cannot detect invalid attribute,
+so mongo plugin marshals all attributes excluding Fluentd keys(tag_key and time_key).
+
+If you ignores an invalid record, please set 'ignore_invalid_record true' in match.
+
+===== Buffer size limitation
+
 MongoDB's output plugins have the limitation of buffer size.
 Because MongoDB and Ruby-Driver checks the total object size at each insertion.
 If total object size gets over the size limitation,

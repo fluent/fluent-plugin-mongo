@@ -14,6 +14,7 @@ class MongoOutput < BufferedOutput
   config_param :collection, :string, :default => 'untagged'
   config_param :host, :string, :default => 'localhost'
   config_param :port, :integer, :default => 27017
+  config_param :ignore_invalid_record, :bool, :default => false
 
   # tag mapping mode
   config_param :tag_mapped, :bool, :default => false
@@ -24,6 +25,7 @@ class MongoOutput < BufferedOutput
   def initialize
     super
     require 'mongo'
+    require 'fluent/plugin/mongo_ext'
     require 'msgpack'
 
     @clients = {}
@@ -93,8 +95,28 @@ class MongoOutput < BufferedOutput
 
   private
 
+  INSERT_ARGUMENT = {:collect_on_error => true}
+  BROKEN_DATA_KEY = '__broken_data'
+
   def operate(collection_name, records)
-    get_or_create_collection(collection_name).insert(records)
+    collection = get_or_create_collection(collection_name)
+    record_ids, error_records = collection.insert(records, INSERT_ARGUMENT)
+    if error_records
+      if @ignore_invalid_record
+        $log.warn "Ignore #{error_records.size} documents"
+      else
+        # Should create another collection like name_broken?
+        converted_records = error_records.map { |record|
+          new_record = {}
+          new_record[@tag_key] = record.delete(@tag_key) if @include_tag_key
+          new_record[@time_key] = record.delete(@time_key)
+          new_record[BROKEN_DATA_KEY] = Marshal.dump(record) # Should use BSON::ByteBuffer
+          new_record
+        }
+        collection.insert(converted_records)
+      end
+    end
+    records
   end
 
   def collect_records(chunk)
@@ -106,10 +128,12 @@ class MongoOutput < BufferedOutput
     records
   end
 
+  FORMAT_COLLECTION_NAME_RE = /(^\.+)|(\.+$)/
+
   def format_collection_name(collection_name)
     formatted = collection_name
     formatted = formatted.gsub(@remove_tag_prefix, '') if @remove_tag_prefix
-    formatted = formatted.gsub(/(^\.+)|(\.+$)/, '')
+    formatted = formatted.gsub(FORMAT_COLLECTION_NAME_RE, '')
     formatted = @collection if formatted.size == 0 # set default for nil tag
     formatted
   end
