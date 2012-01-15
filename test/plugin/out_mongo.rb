@@ -1,4 +1,8 @@
+# -*- encoding: utf-8 -*-
+
 require 'test_helper'
+require 'nkf'
+require 'bson'
 
 class MongoOutputTest < Test::Unit::TestCase
   def setup
@@ -93,5 +97,72 @@ class MongoOutputTest < Test::Unit::TestCase
     assert_equal([{'a' => 1, d.instance.tag_key => 'test'},
                   {'a' => 2, d.instance.tag_key => 'test'}], documents)
     assert_equal('test', collection_name)
+  end
+
+  def test_non_utf8_records
+    utf8 = '日本'
+    sjis = NKF.nkf('-s', utf8)
+    now = Time.now
+    records = [
+      {
+        "time" => now,
+        "strings" => [sjis, utf8]
+      }, {
+      }
+    ]
+    assert_equal([
+      {
+        "time" => now,
+        "strings" => [utf8, utf8]
+      }, {
+      }
+    ], Fluent::MongoOutput::SafeRecords.bson_safe(records))
+
+    [BSON::BSON_C, BSON::BSON_RUBY].each do |bson|
+      assert_raise(BSON::InvalidStringEncoding) {
+        bson.serialize({:records => records}, true)
+      }
+
+      assert_nothing_thrown {
+        bson.serialize({:records => Fluent::MongoOutput::SafeRecords.bson_safe(records)}, true)
+      }
+    end
+  end
+
+  def test_bson_invalid_key_records
+    records = [
+      {''     => 'empty string' },
+      {'a.b'  => 'c'  },
+      {'$foo' => 'bar'}
+    ]
+
+    [BSON::BSON_C, BSON::BSON_RUBY].each do |bson|
+      assert_raise(BSON::InvalidKeyName) {
+        bson.serialize({:records => records}, true)
+      }
+
+      assert_nothing_thrown {
+        bson.serialize({:records => Fluent::MongoOutput::SafeRecords.bson_safe(records)}, true)
+      }
+    end
+  end
+
+  def test_bson_key_type_error_in_bson_ext
+    empty_string_class = Class.new { def to_s; ''; end }
+
+    records = [
+      {Object.new      => 'obcjet'},
+      {empty_string_class.new => 'empty string class'}
+    ]
+
+    [BSON::BSON_C].each do |bson|
+      assert_raise(TypeError) {
+        bson.serialize({:records => records}, true)
+      }
+
+      assert_nothing_thrown {
+        bson.serialize({:records => Fluent::MongoOutput::SafeRecords.bson_safe(records)}, true)
+      }
+    end
   end
 end

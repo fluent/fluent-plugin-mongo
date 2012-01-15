@@ -1,7 +1,50 @@
+require 'nkf'
+
 module Fluent
 
-
 class MongoOutput < BufferedOutput
+
+  module SafeRecords
+    def bson_safe(records)
+      records.map { |record|
+        convert_safe_string(record)
+      }
+    end
+
+    def convert_safe_string(value)
+      case value
+      when Hash
+        result = {}
+        value.each { |key, val|
+          result[safe_hash_key(convert_safe_string(key))] = convert_safe_string(val)
+        }
+        result
+      when Array
+        value.map { |val| convert_safe_string(val) }
+      when String
+        begin
+          value.unpack('U*')
+          value
+        rescue => e
+          # BSON Encording utf8 only
+          NKF.nkf('-w', value)
+        end
+      else
+        value
+      end
+    end
+
+    def safe_hash_key(key)
+      if key.kind_of? String
+        key.gsub(/(^\$|\.)/, '_')
+      else
+        safe_hash_key key.to_s
+      end
+    end
+
+    extend self
+  end
+
   Fluent::Plugin.register_output('mongo', self)
 
   include SetTagKeyMixin
@@ -94,7 +137,12 @@ class MongoOutput < BufferedOutput
   private
 
   def operate(collection_name, records)
-    get_or_create_collection(collection_name).insert(records)
+    collection = get_or_create_collection(collection_name)
+    begin
+      collection.insert(records)
+    rescue BSON::InvalidStringEncoding, BSON::InvalidKeyName, TypeError => e
+      collection.insert(SafeRecords.bson_safe(records))
+    end
   end
 
   def collect_records(chunk)
