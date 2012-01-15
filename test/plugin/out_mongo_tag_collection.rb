@@ -3,7 +3,7 @@ require 'test_helper'
 class MongoTagCollectionTest < Test::Unit::TestCase
   def setup
     Fluent::Test.setup
-    require 'fluent/plugin/out_mongo_tag_collection'
+    require 'fluent/plugin/out_mongo'
   end
 
   CONFIG = %[
@@ -14,7 +14,7 @@ class MongoTagCollectionTest < Test::Unit::TestCase
   ]
 
   def create_driver(conf = CONFIG)
-    Fluent::Test::BufferedOutputTestDriver.new(Fluent::MongoOutputTagCollection) {
+    Fluent::Test::BufferedOutputTestDriver.new(Fluent::MongoOutput) {
       def start
         super
       end

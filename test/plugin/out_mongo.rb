@@ -82,6 +82,10 @@ class MongoOutputTest < Test::Unit::TestCase
     assert_equal('test', collection_name)
   end
 
+  def test_write_with_invalid_recoreds
+    skip('Implement this test using BSON directory later')
+  end
+
   def test_write_at_enable_tag
     d = create_driver(CONFIG + %[
       include_tag_key true
