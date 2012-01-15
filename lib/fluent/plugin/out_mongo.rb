@@ -112,7 +112,7 @@ class MongoOutput < BufferedOutput
     collection_name = format_collection_name(collection_name)
     return @clients[collection_name] if @clients[collection_name]
 
-    @db ||= Mongo::Connection.new(@host, @port).db(@database)
+    @db ||= get_connection
     if @db.collection_names.include?(collection_name)
       collection = @db.collection(collection_name)
       unless @argument[:capped] == collection.capped? # TODO: Verify capped configuration
@@ -124,6 +124,10 @@ class MongoOutput < BufferedOutput
     end
 
     @clients[collection_name] = collection
+  end
+
+  def get_connection
+    Mongo::Connection.new(@host, @port).db(@database)
   end
 
   # Following limits are heuristic. BSON is sometimes bigger than MessagePack and JSON.
