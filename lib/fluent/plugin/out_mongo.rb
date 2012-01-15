@@ -14,7 +14,10 @@ class MongoOutput < BufferedOutput
   config_param :collection, :string, :default => 'untagged'
   config_param :host, :string, :default => 'localhost'
   config_param :port, :integer, :default => 27017
-  config_param :remove_prefix_collection, :string, :default => nil
+
+  # tag mapping mode
+  config_param :tag_mapped, :bool, :default => false
+  config_param :remove_tag_prefix, :string, :default => nil
 
   attr_reader :argument
 
@@ -30,10 +33,11 @@ class MongoOutput < BufferedOutput
   def configure(conf)
     super
 
-    if remove_prefix_collection = conf['remove_prefix_collection']
-      @remove_prefix_collection = Regexp.new('^' + Regexp.escape(remove_prefix_collection))
-    else
-      raise ConfigError, "Normal-mode requires collection parameter" unless conf.has_key?('collection')
+    @tag_mapped = true if conf.has_key?('tag_mapped')
+    raise ConfigError, "normal mode requires collection parameter" if !@tag_mapped and !conf.has_key?('collection')
+
+    if remove_tag_prefix = conf['remove_tag_prefix']
+      @remove_tag_prefix = Regexp.new('^' + Regexp.escape(remove_tag_prefix))
     end
 
     # capped configuration
@@ -55,7 +59,7 @@ class MongoOutput < BufferedOutput
       time
     end
 
-    $log.debug "Setup mongo configuration: mode = #{@remove_prefix_collection ? 'tag mapping' : 'normal'}"
+    $log.debug "Setup mongo configuration: mode = #{@tag_mapped ? 'tag mapped' : 'normal'}"
   end
 
   def start
@@ -74,7 +78,7 @@ class MongoOutput < BufferedOutput
 
   def emit(tag, es, chain)
     # TODO: Should replacement using eval in configure?
-    if @remove_prefix_collection
+    if @tag_mapped
       super(tag, es, chain, tag)
     else
       super(tag, es, chain)
@@ -83,7 +87,7 @@ class MongoOutput < BufferedOutput
 
   def write(chunk)
     # TODO: See emit comment
-    collection_name = @remove_prefix_collection ? chunk.key : @collection
+    collection_name = @tag_mapped ? chunk.key : @collection
     operate(collection_name, collect_records(chunk))
   end
 
@@ -104,7 +108,7 @@ class MongoOutput < BufferedOutput
 
   def format_collection_name(collection_name)
     formatted = collection_name
-    formatted = formatted.gsub(@remove_prefix_collection, '') if @remove_prefix_collection
+    formatted = formatted.gsub(@remove_tag_prefix, '') if @remove_tag_prefix
     formatted = formatted.gsub(/(^\.+)|(\.+$)/, '')
     formatted = @collection if formatted.size == 0 # set default for nil tag
     formatted

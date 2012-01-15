@@ -9,9 +9,9 @@ Store fluent-event as MongoDB Document to MongoDB database.
 MongoOutput set 'time' field to a document by default.
 You set -false- to 'include_time_key' parameter if you disable this behaivor.
 
-=== MongoOutputTagCollection
+==== tag mapped mode
 
-Tag mapping to MongoDB collection automatically.
+Tag mapped to MongoDB collection automatically.
 
 === MongoBackupOutput
 
@@ -35,15 +35,15 @@ Tail capped collection to input data.
       port 10000
 
       # You can use 'capped' if you want to use capped collection
-      capped true
+      capped
       capped_size 100m
 
       # Other buffer configurations here
     </match>
 
-==== Tag collection mapping mode
+==== Tag mapped mode
 
-Use 'remove_prefix_collection' parameter.
+Use 'tag_mapped' parameter.
 
 If tag name is "foo.bar", auto create collection "foo.bar" and insert data.
 
@@ -51,9 +51,12 @@ If tag name is "foo.bar", auto create collection "foo.bar" and insert data.
       type mongo
       database fluent
 
+      # If You use 'tag_mapped', then tag mapped mode enabled.
+      tag_mapped
+
       # If tag is "forward.foo.bar", then prefix "forward." is removed.
       # Collection name to insert is "foo.bar".
-      remove_prefix_collection forward.
+      remove_tag_prefix forward.
 
       # This configuration is used if tag not found. Default is 'untagged'.
       collection misc
