@@ -9,7 +9,8 @@ class MongoTagCollectionTest < Test::Unit::TestCase
   CONFIG = %[
     type mongo
     database fluent
-    remove_prefix_collection should.remove.
+    tag_mapped
+    remove_tag_prefix should.remove.
   ]
 
   def create_driver(conf = CONFIG)
@@ -30,7 +31,7 @@ class MongoTagCollectionTest < Test::Unit::TestCase
 
   def test_configure
     d = create_driver(CONFIG)
-    assert_equal(/^should\.remove\./, d.instance.instance_variable_get(:@remove_prefix_collection))
+    assert_equal(/^should\.remove\./, d.instance.instance_variable_get(:@remove_tag_prefix))
   end
 
   def emit_documents(d)

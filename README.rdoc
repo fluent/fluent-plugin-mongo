@@ -7,7 +7,7 @@
 Store fluent-event as MongoDB Document to MongoDB database.
 
 MongoOutput set 'time' field to a document by default.
-You set -false- to 'include_time_key' parameter if you disable this behaivor.
+You set _false_ to 'include_time_key' parameter if you disable this behaivor.
 
 ==== tag mapped mode
 
