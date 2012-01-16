@@ -4,14 +4,18 @@
 
 === MongoOutput
 
-Store fluent-event as MongoDB Document to MongoDB database.
+Store Fluentd event as a MongoDB Document to MongoDB database.
 
-MongoOutput set 'time' field to a document by default.
-You set _false_ to 'include_time_key' parameter if you disable this behaivor.
+MongoOutput set "time" field to a document by default.
+You set _false_ to _include_time_key_ parameter if you disable this behaivor.
 
 ==== tag mapped mode
 
 Tag mapped to MongoDB collection automatically.
+
+=== MongoReplSetOutput
+
+Replica Set version of MongoOutput
 
 === MongoBackupOutput
 
@@ -34,7 +38,7 @@ Tail capped collection to input data.
       host fluenter
       port 10000
 
-      # You can use 'capped' if you want to use capped collection
+      # Set 'capped' if you want to use capped collection
       capped
       capped_size 100m
 
@@ -43,7 +47,7 @@ Tail capped collection to input data.
 
 ==== Tag mapped mode
 
-Use 'tag_mapped' parameter.
+Use _tag_mapped_ parameter.
 
 If tag name is "foo.bar", auto create collection "foo.bar" and insert data.
 
@@ -51,7 +55,7 @@ If tag name is "foo.bar", auto create collection "foo.bar" and insert data.
       type mongo
       database fluent
 
-      # If You use 'tag_mapped', then tag mapped mode enabled.
+      # Set 'tag_mapped' if you want to use tag mapped mode.
       tag_mapped
 
       # If tag is "forward.foo.bar", then prefix "forward." is removed.
@@ -69,36 +73,69 @@ If tag name is "foo.bar", auto create collection "foo.bar" and insert data.
 ===== Broken data as a BSON
 
 Fluentd event sometimes has an invalid record as a BSON.
-In such case, mongo plugin marshals an invalid record using Marshal.dump
+In such case, Mongo plugin marshals an invalid record using Marshal.dump
 and re-inserts its to same collection.
 
-Example:
+If passed following invalid record:
 
     {"key1": "invalid value", "key2": "valid value", "time": ISODate("2012-01-15T21:09:53Z") }
 
-to
+then Mongo plugin converts this record to following format:
 
-    {"__broken_data": "Marshal.dump result", "time": ISODate("2012-01-15T21:09:53Z") }
+    {"__broken_data": Marshal.dump result of {"key1": "invalid value", "key2": "valid value"}, "time": ISODate("2012-01-15T21:09:53Z") }
 
-mongo-ruby-driver cannot detect invalid attribute,
-so mongo plugin marshals all attributes excluding Fluentd keys(tag_key and time_key).
+Mongo-Ruby-Driver cannot detect an invalid attribute,
+so Mongo plugin marshals all attributes excluding Fluentd keys("tag_key" and "time_key").
 
-If you ignores an invalid record, please set 'ignore_invalid_record true' in match.
+If you want to ignore an invalid record, set _true_ to _ignore_invalid_record_ parameter in match.
+
+    <match forward.*>
+      ...
+
+      # ignore invalid documents at write operation
+      ignore_invalid_document true
+
+      ...
+    </match>
 
 ===== Buffer size limitation
 
-MongoDB's output plugins have the limitation of buffer size.
-Because MongoDB and Ruby-Driver checks the total object size at each insertion.
-If total object size gets over the size limitation,
-MongoDB returns error or Ruby-Driver raises an Exception.
+Mongo plugin has the limitation of buffer size.
+Because MongoDB and mongo-ruby-driver checks the total object size at each insertion.
+If total object size gets over the size limitation, then
+MongoDB returns error or mongo-ruby-driver raises an exception.
 
-So, MongoDB's output plugins reset :buffer_chunk_limit if configurated value is larger than above limitation.
-- Before v1.8, max of :buffer_chunk_limit is 2MB
-- After v1.8, max of :buffer_chunk_limit is 10MB
+So, Mongo plugin resets _buffer_chunk_limit_ if configurated value is larger than above limitation:
+- Before v1.8, max of _buffer_chunk_limit_ is 2MB
+- After v1.8, max of _buffer_chunk_limit_ is 10MB
+
+=== MongoReplSetOutput
+
+Use _mongo_replset_ type in match.
+
+    <match mongo.**>
+      type mongo_replset
+      database fluent
+      collection logs
+
+      # each node separated by ','
+      nodes localhost:27017,localhost:27018,localhost:27019
+
+      # num_retries is threshold at failover, default is 60.
+      # If retry count reached this threshold, mongo plugin raises an exception.
+      num_retries 30
+
+      # following optional parameters passed to ReplSetConnection of mongo-ruby-driver.
+      # See mongo-ruby-driver docs for more detail.
+      #name replset_name
+      #read secondary
+      #refresh_mode sync
+      #refresh_interval 60
+    </match>
 
 === MongoBackupOutput
 
-Use mongo_backup type in match. mongo_backup alwalys use capped collection.
+Use _mongo_backup_ type in match. _mongo_backup_ alwalys use capped collection.
 
     <match ...>
       type mongo_backup
@@ -113,7 +150,7 @@ Use mongo_backup type in match. mongo_backup alwalys use capped collection.
 
 === Tail capped collection
 
-Use mongo_tail type in source. 
+Use _mongo_tail_ type in source.
 
     <source>
       type mongo_tail
