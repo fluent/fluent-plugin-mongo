@@ -1,6 +1,9 @@
 # encoding: utf-8
 $:.push File.expand_path('../lib', __FILE__)
 
+# Fixup the YAML engine mismatch problem
+YAML::ENGINE.yamler = "syck"
+
 Gem::Specification.new do |gem|
   gem.name        = "fluent-plugin-mongo"
   gem.description = "MongoDB plugin for Fluent event collector"
