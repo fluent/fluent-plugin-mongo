@@ -22,8 +22,12 @@ class MongoOutputTest < Test::Unit::TestCase
         super
       end
 
-      def operate(collection_name, records)
-        [format_collection_name(collection_name), records]
+      def operate(collection, records)
+        [format_collection_name(collection), records]
+      end
+
+      def get_or_create_collection(collection_name)
+        collection_name
       end
 
       def mongod_version

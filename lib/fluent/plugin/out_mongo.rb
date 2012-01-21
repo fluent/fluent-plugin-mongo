@@ -94,7 +94,7 @@ class MongoOutput < BufferedOutput
   def write(chunk)
     # TODO: See emit comment
     collection_name = @tag_mapped ? chunk.key : @collection
-    operate(collection_name, collect_records(chunk))
+    operate(get_or_create_collection(collection_name), collect_records(chunk))
   end
 
   private
@@ -102,25 +102,32 @@ class MongoOutput < BufferedOutput
   INSERT_ARGUMENT = {:collect_on_error => true}
   BROKEN_DATA_KEY = '__broken_data'
 
-  def operate(collection_name, records)
-    collection = get_or_create_collection(collection_name)
-    record_ids, error_records = collection.insert(records, INSERT_ARGUMENT)
-    if error_records
-      if @ignore_invalid_record
-        $log.warn "Ignore #{error_records.size} documents"
+  def operate(collection, records)
+    begin
+      record_ids, error_records = collection.insert(records, INSERT_ARGUMENT)
+      if !@ignore_invalid_record and error_records.size > 0
+        operate_invalid_records(collection, error_records)
+      end
+    rescue Mongo::OperationFailure => e
+      # Probably, all records of _records_ are broken...
+      if e.error_code == 13066  # 13066 means "Message contains no documents"
+        operate_invalid_records(collection, records) unless @ignore_invalid_record
       else
-        # Should create another collection like name_broken?
-        converted_records = error_records.map { |record|
-          new_record = {}
-          new_record[@tag_key] = record.delete(@tag_key) if @include_tag_key
-          new_record[@time_key] = record.delete(@time_key)
-          new_record[BROKEN_DATA_KEY] = Marshal.dump(record) # Should use BSON::ByteBuffer
-          new_record
-        }
-        collection.insert(converted_records)
+        raise e
       end
     end
     records
+  end
+
+  def operate_invalid_records(collection, records)
+    converted_records = records.map { |record|
+      new_record = {}
+      new_record[@tag_key] = record.delete(@tag_key) if @include_tag_key
+      new_record[@time_key] = record.delete(@time_key)
+      new_record[BROKEN_DATA_KEY] = Marshal.dump(record) # Should use BSON::ByteBuffer
+      new_record
+    }
+    collection.insert(converted_records) # Should create another collection like name_broken?
   end
 
   def collect_records(chunk)

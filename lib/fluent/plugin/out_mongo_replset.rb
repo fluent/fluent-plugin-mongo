@@ -35,10 +35,9 @@ class MongoOutputReplset < MongoOutput
 
   private
 
-  def operate(collection_name, records)
-    collection = get_or_create_collection(collection_name)
+  def operate(collection, records)
     rescue_connection_failure do
-      collection.insert(records)
+      super(collection, records)
     end
   end
 
