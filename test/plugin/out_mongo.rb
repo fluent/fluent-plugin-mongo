@@ -49,7 +49,7 @@ class MongoOutputTest < Test::Unit::TestCase
     assert_equal('test_collection', d.instance.collection)
     assert_equal('fluenter', d.instance.host)
     assert_equal(27018, d.instance.port)
-    assert_equal({:capped => true, :size => 100}, d.instance.argument)
+    assert_equal({:capped => true, :size => 100}, d.instance.collection_options)
     assert_equal(Fluent::MongoOutput::LIMIT_BEFORE_v1_8, d.instance.instance_variable_get(:@buffer).buffer_chunk_limit)
   end
 

@@ -15,12 +15,13 @@ class MongoOutput < BufferedOutput
   config_param :host, :string, :default => 'localhost'
   config_param :port, :integer, :default => 27017
   config_param :ignore_invalid_record, :bool, :default => false
+  config_param :safe, :bool, :default => true
 
   # tag mapping mode
   config_param :tag_mapped, :bool, :default => false
   config_param :remove_tag_prefix, :string, :default => nil
 
-  attr_reader :argument
+  attr_reader :collection_options
 
   def initialize
     super
@@ -29,7 +30,8 @@ class MongoOutput < BufferedOutput
     require 'msgpack'
 
     @clients = {}
-    @argument = {:capped => false}
+    @connection_options = {}
+    @collection_options = {:capped => false}
   end
 
   def configure(conf)
@@ -45,9 +47,9 @@ class MongoOutput < BufferedOutput
     # capped configuration
     if conf.has_key?('capped')
       raise ConfigError, "'capped_size' parameter is required on <store> of Mongo output" unless conf.has_key?('capped_size')
-      @argument[:capped] = true
-      @argument[:size] = Config.size_value(conf['capped_size'])
-      @argument[:max] = Config.size_value(conf['capped_max']) if conf.has_key?('capped_max')
+      @collection_options[:capped] = true
+      @collection_options[:size] = Config.size_value(conf['capped_size'])
+      @collection_options[:max] = Config.size_value(conf['capped_max']) if conf.has_key?('capped_max')
     end
 
     if @buffer.respond_to?(:buffer_chunk_limit)
@@ -55,6 +57,8 @@ class MongoOutput < BufferedOutput
     else
       $log.warn "#{Fluent::VERSION} does not have :buffer_chunk_limit. Be careful when insert large documents to MongoDB"
     end
+
+    @connection_options[:safe] = @safe
 
     # MongoDB uses BSON's Date for time.
     def @timef.format_nocache(time)
@@ -145,19 +149,19 @@ class MongoOutput < BufferedOutput
     @db ||= get_connection
     if @db.collection_names.include?(collection_name)
       collection = @db.collection(collection_name)
-      unless @argument[:capped] == collection.capped? # TODO: Verify capped configuration
+      unless @collection_options[:capped] == collection.capped? # TODO: Verify capped configuration
         # raise Exception if old collection does not match lastest configuration
         raise ConfigError, "New configuration is different from existing collection"
       end
     else
-      collection = @db.create_collection(collection_name, @argument)
+      collection = @db.create_collection(collection_name, @collection_options)
     end
 
     @clients[collection_name] = collection
   end
 
   def get_connection
-    Mongo::Connection.new(@host, @port).db(@database)
+    Mongo::Connection.new(@host, @port, @connection_options).db(@database)
   end
 
   # Following limits are heuristic. BSON is sometimes bigger than MessagePack and JSON.

@@ -17,18 +17,17 @@ class MongoOutputReplset < MongoOutput
     super
 
     @nodes = parse_nodes(conf['nodes'])
-    @rs_argument = {}
     if name = conf['name']
-      @rs_argument[:name] = conf['name']
+      @connection_options[:name] = conf['name']
     end
     if read = conf['read']
-      @rs_argument[:read] = read.to_sym
+      @connection_options[:read] = read.to_sym
     end
     if refresh_mode = conf['refresh_mode']
-      @rs_argument[:refresh_mode] = refresh_mode.to_sym
+      @connection_options[:refresh_mode] = refresh_mode.to_sym
     end
     if refresh_interval = conf['refresh_interval']
-      @rs_argument[:refresh_interval] = refresh_interval
+      @connection_options[:refresh_interval] = refresh_interval
     end
 
     $log.debug "Setup replica set configuration: nodes = #{conf['nodes']}"
@@ -51,7 +50,7 @@ class MongoOutputReplset < MongoOutput
   end
 
   def get_connection
-    Mongo::ReplSetConnection.new(*@nodes, @rs_argument).db(@database)
+    Mongo::ReplSetConnection.new(*@nodes, @connection_options).db(@database)
   end
 
   def rescue_connection_failure
