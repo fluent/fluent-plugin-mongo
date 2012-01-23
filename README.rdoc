@@ -1,33 +1,26 @@
-= MongoDB plugin for Fluent
+= MongoDB plugin for Fluentd
 
-== Component
+fluent-plugin-mongo provides input and output plugins for {Fluentd}[http://fluentd.org/].
 
-=== MongoOutput
+= Installation
 
-Store Fluentd event as a MongoDB Document to MongoDB database.
+== Gems
 
-MongoOutput set "time" field to a document by default.
-You set _false_ to _include_time_key_ parameter if you disable this behaivor.
+The gem is hosted at {Rubygems.org}[http://rubygems.org]. You can install the gem as follows:
 
-==== tag mapped mode
+    $ fluent-gem install fluent-plugin-mongo
 
-Tag mapped to MongoDB collection automatically.
+= Plugins
 
-=== MongoReplSetOutput
+== Output plugin
 
-Replica Set version of MongoOutput
+=== mongo
 
-=== MongoBackupOutput
+Store Fluentd event to MongoDB database.
 
-Store fluent-event to local capped collection for backup.
+==== Configuration
 
-=== MongoTailInput
-
-Tail capped collection to input data.
-
-== Configuration
-
-=== MongoOutput
+Use _mongo_ type in match.
 
     <match mongo.**>
       type mongo
@@ -45,9 +38,13 @@ Tail capped collection to input data.
       # Other buffer configurations here
     </match>
 
-==== Tag mapped mode
+=== mongo(tag mapped mode)
 
-Use _tag_mapped_ parameter.
+Tag mapped to MongoDB collection automatically.
+
+==== Configuration
+
+Use _tag_mapped_ parameter in match of _mongo_ type.
 
 If tag name is "foo.bar", auto create collection "foo.bar" and insert data.
 
@@ -68,9 +65,80 @@ If tag name is "foo.bar", auto create collection "foo.bar" and insert data.
       # Other configurations here
     </match>
 
-==== NOTE
+=== mongo_replset
 
-===== Broken data as a BSON
+Replica Set version of mongo.
+
+==== Configuration
+
+Use _mongo_replset_ type in match.
+
+    <match mongo.**>
+      type mongo_replset
+      database fluent
+      collection logs
+
+      # each node separated by ','
+      nodes localhost:27017,localhost:27018,localhost:27019
+
+      # num_retries is threshold at failover, default is 60.
+      # If retry count reached this threshold, mongo plugin raises an exception.
+      num_retries 30
+
+      # following optional parameters passed to ReplSetConnection of mongo-ruby-driver.
+      # See mongo-ruby-driver docs for more detail.
+      #name replset_name
+      #read secondary
+      #refresh_mode sync
+      #refresh_interval 60
+    </match>
+
+=== mongo_backup
+
+Store Fluentd event to local capped collection for backup.
+
+==== Configuration
+
+Use _mongo_backup_ type in match. _mongo_backup_ alwalys use capped collection.
+
+    <match ...>
+      type mongo_backup
+      capped_size 100m
+
+      <store>
+        type tcp
+        host 192.168.0.13
+        ...
+      </store>
+    </match>
+
+== Input plugin
+
+=== mongo_tail
+
+Tail capped collection to input data.
+
+==== Configuration
+
+Use _mongo_tail_ type in source.
+
+    <source>
+      type mongo_tail
+      database fluent
+      collection capped_log
+
+      tag app.mongo_log
+
+      # Convert 'time'(BSON's time) to fluent time(Unix time).
+      time_key time
+
+      # You can store last ObjectId to tail over server's shutdown
+      id_store_file /Users/repeatedly/devel/fluent-plugin-mongo/last_id
+    </source>
+
+= NOTE
+
+== Broken data as a BSON
 
 Fluentd event sometimes has an invalid record as a BSON.
 In such case, Mongo plugin marshals an invalid record using Marshal.dump
@@ -98,7 +166,7 @@ If you want to ignore an invalid record, set _true_ to _ignore_invalid_record_ p
       ...
     </match>
 
-===== Buffer size limitation
+== Buffer size limitation
 
 Mongo plugin has the limitation of buffer size.
 Because MongoDB and mongo-ruby-driver checks the total object size at each insertion.
@@ -109,78 +177,21 @@ So, Mongo plugin resets _buffer_chunk_limit_ if configurated value is larger tha
 - Before v1.8, max of _buffer_chunk_limit_ is 2MB
 - After v1.8, max of _buffer_chunk_limit_ is 10MB
 
-=== MongoReplSetOutput
+= Tool
 
-Use _mongo_replset_ type in match.
+You can tail mongo capped collection.
 
-    <match mongo.**>
-      type mongo_replset
-      database fluent
-      collection logs
+    $ mongo-tail -f
 
-      # each node separated by ','
-      nodes localhost:27017,localhost:27018,localhost:27019
+= TODO
 
-      # num_retries is threshold at failover, default is 60.
-      # If retry count reached this threshold, mongo plugin raises an exception.
-      num_retries 30
-
-      # following optional parameters passed to ReplSetConnection of mongo-ruby-driver.
-      # See mongo-ruby-driver docs for more detail.
-      #name replset_name
-      #read secondary
-      #refresh_mode sync
-      #refresh_interval 60
-    </match>
-
-=== MongoBackupOutput
-
-Use _mongo_backup_ type in match. _mongo_backup_ alwalys use capped collection.
-
-    <match ...>
-      type mongo_backup
-      capped_size 100m
-
-      <store>
-        type tcp
-        host 192.168.0.13
-        ...
-      </store>
-    </match>
-
-=== Tail capped collection
-
-Use _mongo_tail_ type in source.
-
-    <source>
-      type mongo_tail
-      database fluent
-      collection capped_log
-
-      tag app.mongo_log
-
-      # Convert 'time'(BSON's time) to fluent time(Unix time).
-      time_key time
-
-      # You can store last ObjectId to tail over server's shutdown
-      id_store_file /Users/repeatedly/devel/fluent-plugin-mongo/last_id
-    </source>
-
-== TODO
-
-=== More configuration
+== More configuration
 
 - Authentication
 - Select insert or update
 - etc
 
-== Tool
-
-You can tail mongo capped collection.
-
-    mongo-tail -f
-
-== Copyright
+= Copyright
 
 Copyright:: Copyright (c) 2011- Masahiro Nakagawa
 License::   Apache License, Version 2.0
