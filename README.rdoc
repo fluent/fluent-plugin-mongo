@@ -26,6 +26,8 @@ Use _mongo_ type in match.
       type mongo
       database fluent
       collection test
+      user bob
+      password password123
 
       # Following attibutes are optional
       host fluenter

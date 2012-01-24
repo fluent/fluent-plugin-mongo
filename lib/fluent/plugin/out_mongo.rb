@@ -14,6 +14,8 @@ class MongoOutput < BufferedOutput
   config_param :collection, :string, :default => 'untagged'
   config_param :host, :string, :default => 'localhost'
   config_param :port, :integer, :default => 27017
+  config_param :user, :string
+  config_param :password, :string
   config_param :ignore_invalid_record, :bool, :default => false
   config_param :safe, :bool, :default => true
 
@@ -152,7 +154,7 @@ class MongoOutput < BufferedOutput
   def get_or_create_collection(collection_name)
     collection_name = format_collection_name(collection_name)
     return @clients[collection_name] if @clients[collection_name]
-
+    
     @db ||= get_connection
     if @db.collection_names.include?(collection_name)
       collection = @db.collection(collection_name)
@@ -168,7 +170,8 @@ class MongoOutput < BufferedOutput
   end
 
   def get_connection
-    Mongo::Connection.new(@host, @port, @connection_options).db(@database)
+    db = Mongo::Connection.new(@host, @port, @connection_options).db(@database)
+    authenticate(db)
   end
 
   # Following limits are heuristic. BSON is sometimes bigger than MessagePack and JSON.
@@ -195,8 +198,23 @@ class MongoOutput < BufferedOutput
   end
 
   def mongod_version
-    Mongo::Connection.new(@host, @port).db('admin').command('serverStatus' => 1)['version']
+    db = Mongo::Connection.new(@host, @port).db('admin')
+    authenticate(db)
+    db.command('serverStatus' => 1)['version']    
   end
+  
+  def authenticate(db)
+    unless @user.nil? || @password.nil?
+      begin
+        db.authenticate(@user, @password)
+      rescue Mongo::AuthenticationError => e
+        $log.fatal e
+        exit!
+      end
+    end
+    return db
+  end
+  
 end
 
 
