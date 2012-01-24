@@ -154,7 +154,7 @@ class MongoOutput < BufferedOutput
   def get_or_create_collection(collection_name)
     collection_name = format_collection_name(collection_name)
     return @clients[collection_name] if @clients[collection_name]
-    
+
     @db ||= get_connection
     if @db.collection_names.include?(collection_name)
       collection = @db.collection(collection_name)
@@ -171,7 +171,7 @@ class MongoOutput < BufferedOutput
 
   def get_connection
     db = Mongo::Connection.new(@host, @port, @connection_options).db(@database)
-    authenticate(db)
+    return authenticate(db)
   end
 
   # Following limits are heuristic. BSON is sometimes bigger than MessagePack and JSON.
@@ -200,9 +200,9 @@ class MongoOutput < BufferedOutput
   def mongod_version
     db = Mongo::Connection.new(@host, @port).db('admin')
     authenticate(db)
-    db.command('serverStatus' => 1)['version']    
+    db.command('serverStatus' => 1)['version']
   end
-  
+
   def authenticate(db)
     unless @user.nil? || @password.nil?
       begin
@@ -214,7 +214,7 @@ class MongoOutput < BufferedOutput
     end
     return db
   end
-  
+
 end
 
 
