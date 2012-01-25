@@ -161,7 +161,7 @@ If you want to ignore an invalid record, set _true_ to _ignore_invalid_record_ p
       ...
 
       # ignore invalid documents at write operation
-      ignore_invalid_document true
+      ignore_invalid_record true
 
       ...
     </match>
