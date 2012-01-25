@@ -14,8 +14,8 @@ class MongoOutput < BufferedOutput
   config_param :collection, :string, :default => 'untagged'
   config_param :host, :string, :default => 'localhost'
   config_param :port, :integer, :default => 27017
-  config_param :user, :string
-  config_param :password, :string
+  config_param :user, :string, :default => nil
+  config_param :password, :string, :default => nil
   config_param :ignore_invalid_record, :bool, :default => false
   config_param :safe, :bool, :default => true
 
