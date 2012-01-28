@@ -4,6 +4,9 @@ module Fluent
 class MongoTailInput < Input
   Plugin.register_input('mongo_tail', self)
 
+  require 'fluent/plugin/mongo_util'
+  include MongoUtil
+
   config_param :database, :string
   config_param :collection, :string
   config_param :host, :string, :default => 'localhost'
@@ -18,9 +21,9 @@ class MongoTailInput < Input
   config_param :id_store_file, :string, :default => nil
 
   def initialize
+    super
     require 'mongo'
     require 'bson'
-    super
   end
 
   def configure(conf)
@@ -62,11 +65,19 @@ class MongoTailInput < Input
   private
 
   def get_capped_collection
-    db = Mongo::Connection.new(@host, @port).db(@database)
-    raise ConfigError, "'#{@database}.#{@collection}' not found: node = #{@host}:#{@port}" unless db.collection_names.include?(@collection)
-    collection = db.collection(@collection)
-    raise ConfigError, "'#{@database}.#{@collection}' is not capped: node = #{@host}:#{@port}" unless collection.capped?
-    collection
+    begin
+      db = authenticate(Mongo::Connection.new(@host, @port).db(@database))
+      raise ConfigError, "'#{@database}.#{@collection}' not found: node = #{@host}:#{@port}" unless db.collection_names.include?(@collection)
+      collection = db.collection(@collection)
+      raise ConfigError, "'#{@database}.#{@collection}' is not capped: node = #{@host}:#{@port}" unless collection.capped?
+      collection
+    rescue Mongo::ConnectionFailure => e
+      $log.fatal "Failed to connect to 'mongod'. Please restart 'fluentd' after 'mongod' started: #{e}"
+      exit!
+    rescue Mongo::OperationFailure => e
+      $log.fatal "Operation failed. Probably, 'mongod' needs an authentication: #{e}"
+      exit!
+    end
   end
 
   def tailoop(cursor)
