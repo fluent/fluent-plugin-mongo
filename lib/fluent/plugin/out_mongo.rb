@@ -171,7 +171,7 @@ class MongoOutput < BufferedOutput
 
   def get_connection
     db = Mongo::Connection.new(@host, @port, @connection_options).db(@database)
-    return authenticate(db)
+    authenticate(db)
   end
 
   # Following limits are heuristic. BSON is sometimes bigger than MessagePack and JSON.
@@ -182,9 +182,13 @@ class MongoOutput < BufferedOutput
     begin
       limit = mongod_version >= "1.8.0" ? LIMIT_AFTER_v1_8 : LIMIT_BEFORE_v1_8  # TODO: each version comparison
     rescue Mongo::ConnectionFailure => e
-      $log.warn "mongo connection failed, set #{LIMIT_BEFORE_v1_8} to chunk limit"
-      limit = LIMIT_BEFORE_v1_8
+      $log.fatal "Failed to connect to 'mongod'. Please restart 'fluentd' after started 'mongod': #{e}"
+      exit!
+    rescue Mongo::OperationFailure => e
+      $log.fatal "Operation failed. Probably, 'mongod' needs an authentication: #{e}"
+      exit!
     rescue Exception => e
+      # TODO: should do exit?
       $log.warn "mongo unknown error #{e}, set #{LIMIT_BEFORE_v1_8} to chunk limit"
       limit = LIMIT_BEFORE_v1_8
     end
@@ -212,9 +216,9 @@ class MongoOutput < BufferedOutput
         exit!
       end
     end
-    return db
-  end
 
+    db
+  end
 end
 
 
