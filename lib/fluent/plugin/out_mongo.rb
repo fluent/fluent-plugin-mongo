@@ -4,6 +4,9 @@ module Fluent
 class MongoOutput < BufferedOutput
   Fluent::Plugin.register_output('mongo', self)
 
+  require 'fluent/plugin/mongo_util'
+  include MongoUtil
+
   include SetTagKeyMixin
   config_set_default :include_tag_key, false
 
@@ -14,8 +17,6 @@ class MongoOutput < BufferedOutput
   config_param :collection, :string, :default => 'untagged'
   config_param :host, :string, :default => 'localhost'
   config_param :port, :integer, :default => 27017
-  config_param :user, :string, :default => nil
-  config_param :password, :string, :default => nil
   config_param :ignore_invalid_record, :bool, :default => false
   config_param :safe, :bool, :default => true
 
@@ -28,8 +29,8 @@ class MongoOutput < BufferedOutput
   def initialize
     super
     require 'mongo'
-    require 'fluent/plugin/mongo_ext'
     require 'msgpack'
+    require 'fluent/plugin/mongo_ext'
 
     @clients = {}
     @connection_options = {}
@@ -182,7 +183,7 @@ class MongoOutput < BufferedOutput
     begin
       limit = mongod_version >= "1.8.0" ? LIMIT_AFTER_v1_8 : LIMIT_BEFORE_v1_8  # TODO: each version comparison
     rescue Mongo::ConnectionFailure => e
-      $log.fatal "Failed to connect to 'mongod'. Please restart 'fluentd' after started 'mongod': #{e}"
+      $log.fatal "Failed to connect to 'mongod'. Please restart 'fluentd' after 'mongod' started: #{e}"
       exit!
     rescue Mongo::OperationFailure => e
       $log.fatal "Operation failed. Probably, 'mongod' needs an authentication: #{e}"
@@ -202,22 +203,8 @@ class MongoOutput < BufferedOutput
   end
 
   def mongod_version
-    db = Mongo::Connection.new(@host, @port).db('admin')
-    authenticate(db)
+    db = authenticate(Mongo::Connection.new(@host, @port).db('admin'))
     db.command('serverStatus' => 1)['version']
-  end
-
-  def authenticate(db)
-    unless @user.nil? || @password.nil?
-      begin
-        db.authenticate(@user, @password)
-      rescue Mongo::AuthenticationError => e
-        $log.fatal e
-        exit!
-      end
-    end
-
-    db
   end
 end
 
