@@ -26,8 +26,6 @@ Use _mongo_ type in match.
       type mongo
       database fluent
       collection test
-      user bob
-      password password123
 
       # Following attibutes are optional
       host fluenter
@@ -36,6 +34,10 @@ Use _mongo_ type in match.
       # Set 'capped' if you want to use capped collection
       capped
       capped_size 100m
+
+      # Set 'user' and 'password' for authentication
+      user handa
+      password shinobu
 
       # Other buffer configurations here
     </match>
@@ -189,8 +191,7 @@ You can tail mongo capped collection.
 
 == More configuration
 
-- Authentication
-- Select insert or update
+- Multi process
 - etc
 
 = Copyright
