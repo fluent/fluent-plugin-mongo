@@ -181,6 +181,21 @@ So, Mongo plugin resets _buffer_chunk_limit_ if configurated value is larger tha
 - Before v1.8, max of _buffer_chunk_limit_ is 2MB
 - After v1.8, max of _buffer_chunk_limit_ is 10MB
 
+== Disable collection check
+
+Mongo plugin checks a collection's configuration to prevent unexpected insertion to existing collection.
+In tag mapped mode, Mongo plugin accesses many collections. In this case, collection checking is not usable
+because current configuration format cannot write multiple values in one parameter.
+So, if you disable this checking, put ```disable_collection_check true``` in match.
+
+    <match forward.*>
+      ...
+
+      disable_collection_check true
+
+      ...
+    </match>
+
 = Tool
 
 You can tail mongo capped collection.

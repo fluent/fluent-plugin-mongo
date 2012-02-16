@@ -18,6 +18,7 @@ class MongoOutput < BufferedOutput
   config_param :host, :string, :default => 'localhost'
   config_param :port, :integer, :default => 27017
   config_param :ignore_invalid_record, :bool, :default => false
+  config_param :disable_collection_check, :bool, :default => false
   config_param :safe, :bool, :default => true
 
   # tag mapping mode
@@ -157,7 +158,7 @@ class MongoOutput < BufferedOutput
     return @clients[collection_name] if @clients[collection_name]
 
     @db ||= get_connection
-    if @db.collection_names.include?(collection_name)
+    if @db.collection_names.include?(collection_name) and !@disable_collection_check
       collection = @db.collection(collection_name)
       unless @collection_options[:capped] == collection.capped? # TODO: Verify capped configuration
         # raise Exception if old collection does not match lastest configuration
