@@ -203,7 +203,7 @@ class MongoOutput < BufferedOutput
   end
 
   def mongod_version
-    db = authenticate(Mongo::Connection.new(@host, @port).db('admin'))
+    db = authenticate(Mongo::Connection.new(@host, @port).db(@database))
     db.command('serverStatus' => 1)['version']
   end
 end
