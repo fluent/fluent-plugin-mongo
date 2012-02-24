@@ -13,6 +13,10 @@ class MongoOutputReplset < MongoOutput
   config_param :refresh_interval, :integer, :default => nil
   config_param :num_retries, :integer, :default => 60
 
+  # disable single node configuration
+  config_param :host, :string, :default => nil
+  config_param :port, :integer, :default => nil
+
   def configure(conf)
     super
 
@@ -49,7 +53,8 @@ class MongoOutputReplset < MongoOutput
   end
 
   def get_connection
-    Mongo::ReplSetConnection.new(*@nodes, @connection_options).db(@database)
+    db = Mongo::ReplSetConnection.new(*@nodes, @connection_options).db(@database)
+    authenticate(db)
   end
 
   def rescue_connection_failure
