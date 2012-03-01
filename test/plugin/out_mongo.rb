@@ -54,7 +54,10 @@ class MongoOutputTest < Test::Unit::TestCase
     assert_equal('fluenter', d.instance.host)
     assert_equal(27018, d.instance.port)
     assert_equal({:capped => true, :size => 100}, d.instance.collection_options)
-    assert_equal(Fluent::MongoOutput::LIMIT_BEFORE_v1_8, d.instance.instance_variable_get(:@buffer).buffer_chunk_limit)
+    assert_equal(33554432, d.instance.instance_variable_get(:@buffer).buffer_chunk_limit)
+    # buffer_chunk_limit moved from configure to start
+    # I will move this test to correct space after BufferedOutputTestDriver supports start method invoking
+    # assert_equal(Fluent::MongoOutput::LIMIT_BEFORE_v1_8, d.instance.instance_variable_get(:@buffer).buffer_chunk_limit)
   end
 
   def test_format
