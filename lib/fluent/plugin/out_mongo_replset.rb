@@ -46,14 +46,11 @@ class MongoOutputReplset < MongoOutput
   end
 
   def parse_nodes(nodes)
-    nodes.split(',').map { |node|
-      host, port = node.split(':')
-      [host, Integer(port)]
-    }
+    nodes.split(',')
   end
 
   def get_connection
-    db = Mongo::ReplSetConnection.new(*@nodes, @connection_options).db(@database)
+    db = Mongo::ReplSetConnection.new(@nodes, @connection_options).db(@database)
     authenticate(db)
   end
 
