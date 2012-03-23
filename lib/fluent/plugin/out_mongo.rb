@@ -18,7 +18,7 @@ class MongoOutput < BufferedOutput
   config_param :host, :string, :default => 'localhost'
   config_param :port, :integer, :default => 27017
   config_param :ignore_invalid_record, :bool, :default => false
-  config_param :disable_collection_check, :bool, :default => false
+  config_param :disable_collection_check, :bool, :default => nil
   config_param :safe, :bool, :default => true
 
   # tag mapping mode
@@ -40,7 +40,12 @@ class MongoOutput < BufferedOutput
   def configure(conf)
     super
 
-    @tag_mapped = true if conf.has_key?('tag_mapped')
+    if conf.has_key?('tag_mapped')
+      @tag_mapped = true
+      @disable_collection_check = true if @disable_collection_check.nil?
+    else
+      @disable_collection_check = false if @disable_collection_check.nil?
+    end
     raise ConfigError, "normal mode requires collection parameter" if !@tag_mapped and !conf.has_key?('collection')
 
     if remove_tag_prefix = conf['remove_tag_prefix']
@@ -158,11 +163,12 @@ class MongoOutput < BufferedOutput
     return @clients[collection_name] if @clients[collection_name]
 
     @db ||= get_connection
-    if @db.collection_names.include?(collection_name) and !@disable_collection_check
+    if @db.collection_names.include?(collection_name)
       collection = @db.collection(collection_name)
-      unless @collection_options[:capped] == collection.capped? # TODO: Verify capped configuration
-        # raise Exception if old collection does not match lastest configuration
-        raise ConfigError, "New configuration is different from existing collection"
+      unless @disable_collection_check
+        unless @collection_options[:capped] == collection.capped? # TODO: Verify capped configuration
+          raise ConfigError, "New configuration is different from existing collection"
+        end
       end
     else
       collection = @db.create_collection(collection_name, @collection_options)
