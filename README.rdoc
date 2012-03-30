@@ -146,7 +146,7 @@ Use _mongo_tail_ type in source.
 
 Fluentd event sometimes has an invalid record as a BSON.
 In such case, Mongo plugin marshals an invalid record using Marshal.dump
-and re-inserts its to same collection.
+and re-inserts its to same collection as a binary.
 
 If passed following invalid record:
 
@@ -154,10 +154,17 @@ If passed following invalid record:
 
 then Mongo plugin converts this record to following format:
 
-    {"__broken_data": Marshal.dump result of {"key1": "invalid value", "key2": "valid value"}, "time": ISODate("2012-01-15T21:09:53Z") }
+    {"__broken_data": BinData(0, Marshal.dump result of {"key1": "invalid value", "key2": "valid value"}), "time": ISODate("2012-01-15T21:09:53Z") }
 
 Mongo-Ruby-Driver cannot detect an invalid attribute,
 so Mongo plugin marshals all attributes excluding Fluentd keys("tag_key" and "time_key").
+
+You can deserialize broken data using Mongo and Marshal.load. Sample code is below:
+
+    # _collection_ is an instance of Mongo::Collection
+    collection.find({'__broken_data' => {'$exists' => true}}).each do |doc|
+      p Marshal.load(doc['__broken_data'].to_s) #=> {"key1": "invalid value", "key2": "valid value"}
+    end
 
 If you want to ignore an invalid record, set _true_ to _ignore_invalid_record_ parameter in match.
 

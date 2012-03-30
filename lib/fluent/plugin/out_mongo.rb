@@ -133,7 +133,7 @@ class MongoOutput < BufferedOutput
       new_record = {}
       new_record[@tag_key] = record.delete(@tag_key) if @include_tag_key
       new_record[@time_key] = record.delete(@time_key)
-      new_record[BROKEN_DATA_KEY] = Marshal.dump(record) # Should use BSON::ByteBuffer
+      new_record[BROKEN_DATA_KEY] = BSON::Binary.new(Marshal.dump(record))
       new_record
     }
     collection.insert(converted_records) # Should create another collection like name_broken?
