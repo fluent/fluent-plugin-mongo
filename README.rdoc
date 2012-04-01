@@ -209,6 +209,18 @@ You can tail mongo capped collection.
 
     $ mongo-tail -f
 
+= Test
+
+Run following command:
+
+    $ bundle exec rake test
+
+You can use 'mongod' environment variable for specified mongod:
+
+    $ mongod=/path/to/mongod bundle exec rake test
+
+Note that source code in test/tools are from mongo-ruby-driver.
+
 = TODO
 
 == More configuration

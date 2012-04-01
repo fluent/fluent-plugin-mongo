@@ -30,6 +30,10 @@ class MongoTagCollectionTest < Test::Unit::TestCase
       def get_or_create_collection(collection_name)
         collection_name
       end
+
+      def mongod_version
+        "2.0.0"
+      end
     }.configure(conf)
   end
 
