@@ -24,6 +24,8 @@ class MongoOutput < BufferedOutput
   # tag mapping mode
   config_param :tag_mapped, :bool, :default => false
   config_param :remove_tag_prefix, :string, :default => nil
+  config_param :tag_feild, :bool, :default => false
+  config_param :tag_field_name, :string, :default => '__tag__'
 
   attr_reader :collection_options
 
@@ -50,6 +52,13 @@ class MongoOutput < BufferedOutput
 
     if remove_tag_prefix = conf['remove_tag_prefix']
       @remove_tag_prefix = Regexp.new('^' + Regexp.escape(remove_tag_prefix))
+    end
+
+    if conf.has_key?('tag_feild')
+      @tag_field = true
+    end
+    if conf.has_key?('tag_field_name')
+      @tag_field_name = conf['tag_field_name']
     end
 
     # capped configuration
@@ -93,7 +102,7 @@ class MongoOutput < BufferedOutput
 
   def emit(tag, es, chain)
     # TODO: Should replacement using eval in configure?
-    if @tag_mapped
+    if @tag_mapped or @tag_field
       super(tag, es, chain, tag)
     else
       super(tag, es, chain)
@@ -141,7 +150,16 @@ class MongoOutput < BufferedOutput
 
   def collect_records(chunk)
     records = []
+    if @tag_field
+      tag = chunk.key
+      tag = tag.gsub(@remove_tag_prefix, '') if @remove_tag_prefix
+      tag = tag.gsub(FORMAT_COLLECTION_NAME_RE, '')
+    end
+
     chunk.msgpack_each { |time, record|
+      if @tag_field
+        recode[@tag_field_name] = tag
+      end
       record[@time_key] = Time.at(time || record[@time_key]) if @include_time_key
       records << record
     }
@@ -152,7 +170,7 @@ class MongoOutput < BufferedOutput
 
   def format_collection_name(collection_name)
     formatted = collection_name
-    formatted = formatted.gsub(@remove_tag_prefix, '') if @remove_tag_prefix
+    formatted = formatted.gsub(@remove_tag_prefix, '') if @tag_mapped and @remove_tag_prefix
     formatted = formatted.gsub(FORMAT_COLLECTION_NAME_RE, '')
     formatted = @collection if formatted.size == 0 # set default for nil tag
     formatted
