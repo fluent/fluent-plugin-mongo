@@ -1,3 +1,8 @@
+Release 0.6.9 - 2012/10/12
+
+	* Fix invalid use of '~>' in gemspec.
+
+
 Release 0.6.8 - 2012/10/12
 
 	* Lock fluentd gem version with 0.10.x.
