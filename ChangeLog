@@ -1,3 +1,9 @@
+Release 0.6.8 - 2012/10/12
+
+	* Lock fluentd gem version with 0.10.x.
+	* Lock mongo gem version with 1.6.x.
+
+
 Release 0.6.7 - 2012/03/31
 
 	* Fix invaild record handling with BSON::Binary
