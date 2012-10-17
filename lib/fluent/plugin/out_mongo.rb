@@ -71,6 +71,9 @@ class MongoOutput < BufferedOutput
   end
 
   def start
+    # Non tag mapped mode, we can check collection configuration before server start.
+    get_or_create_collection(@collection) unless @tag_mapped
+
     # From configure for avoding complex method dependency...
     if @buffer.respond_to?(:buffer_chunk_limit)
       @buffer.buffer_chunk_limit = available_buffer_chunk_limit
@@ -166,8 +169,11 @@ class MongoOutput < BufferedOutput
     if @db.collection_names.include?(collection_name)
       collection = @db.collection(collection_name)
       unless @disable_collection_check
-        unless @collection_options[:capped] == collection.capped? # TODO: Verify capped configuration
-          raise ConfigError, "New configuration is different from existing collection"
+        capped = [1, true].include?(collection.stats['capped']) # TODO: Remove this check after mongo gem upgrade to 1.7.x
+        unless @collection_options[:capped] == capped # TODO: Verify capped configuration
+          new_mode = format_collection_mode(@collection_options[:capped])
+          old_mode = format_collection_mode(capped)
+          raise ConfigError, "New configuration is different from existing collection: new = #{new_mode}, old = #{old_mode}"
         end
       end
     else
@@ -175,6 +181,10 @@ class MongoOutput < BufferedOutput
     end
 
     @clients[collection_name] = collection
+  end
+
+  def format_collection_mode(mode)
+    mode ? 'capped' : 'normal'
   end
 
   def get_connection
