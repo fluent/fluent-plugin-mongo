@@ -1,3 +1,10 @@
+Release 0.6.10 - 2012/10/17
+
+	* mongo-tail always flush STDOUT for pipeline usage.
+	  https://github.com/fluent/fluent-plugin-mongo/issues/16
+	* Fix capped collection checking for 2.1.x or later versions.
+
+
 Release 0.6.9 - 2012/10/12
 
 	* Fix invalid use of '~>' in gemspec.
