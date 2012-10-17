@@ -65,7 +65,8 @@ def tail_forever(collection, conf)
     cursor = Mongo::Cursor.new(collection, cursor_conf) unless cursor.alive?
 
     if doc = cursor.next_document
-      puts doc.to_json
+      STDOUT.puts doc.to_json
+      STDOUT.flush
     else
       sleep 1
     end
