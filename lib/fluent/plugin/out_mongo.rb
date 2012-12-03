@@ -221,7 +221,7 @@ class MongoOutput < BufferedOutput
 
   def mongod_version
     db = get_connection
-    db.command('serverStatus' => 1)['version']
+    db.command('buildInfo' => 1)['version']
   end
 end
 
