@@ -20,6 +20,7 @@ class MongoOutput < BufferedOutput
   config_param :ignore_invalid_record, :bool, :default => false
   config_param :disable_collection_check, :bool, :default => nil
   config_param :safe, :bool, :default => true
+  config_param :timestamp, :bool, :default => false
 
   # tag mapping mode
   config_param :tag_mapped, :bool, :default => false
@@ -50,6 +51,10 @@ class MongoOutput < BufferedOutput
 
     if remove_tag_prefix = conf['remove_tag_prefix']
       @remove_tag_prefix = Regexp.new('^' + Regexp.escape(remove_tag_prefix))
+    end
+
+    if conf.has_key?('timestamp')
+      @timestamp = true
     end
 
     # capped configuration
@@ -145,7 +150,11 @@ class MongoOutput < BufferedOutput
   def collect_records(chunk)
     records = []
     chunk.msgpack_each { |time, record|
-      record[@time_key] = Time.at(time || record[@time_key]) if @include_time_key
+      if @timestamp
+        record[@time_key] = Time.at(time || record[@time_key]).to_i if @include_time_key
+      else
+        record[@time_key] = Time.at(time || record[@time_key]) if @include_time_key
+      end
       records << record
     }
     records
