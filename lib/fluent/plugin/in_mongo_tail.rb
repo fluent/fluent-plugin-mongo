@@ -69,7 +69,7 @@ class MongoTailInput < Input
       db = authenticate(Mongo::Connection.new(@host, @port).db(@database))
       raise ConfigError, "'#{@database}.#{@collection}' not found: node = #{@host}:#{@port}" unless db.collection_names.include?(@collection)
       collection = db.collection(@collection)
-      raise ConfigError, "'#{@database}.#{@collection}' is not capped: node = #{@host}:#{@port}" unless collection.capped?
+      raise ConfigError, "'#{@database}.#{@collection}' is not capped: node = #{@host}:#{@port}" unless [1, true].include?(collection.stats['capped']) # older version(2.0.x or earlier) returns 1
       collection
     rescue Mongo::ConnectionFailure => e
       $log.fatal "Failed to connect to 'mongod'. Please restart 'fluentd' after 'mongod' started: #{e}"
