@@ -11,6 +11,7 @@ class MongoTailInput < Input
   config_param :collection, :string
   config_param :host, :string, :default => 'localhost'
   config_param :port, :integer, :default => 27017
+  config_param :wait_time, :integer, :default => 1
 
   config_param :tag, :string, :default => nil
   config_param :tag_key, :string, :default => nil
@@ -105,7 +106,7 @@ class MongoTailInput < Input
         # Should use MultiEventStream?
         Engine.emit(tag, time, doc)
       else
-        sleep 1
+        sleep @wait_time
       end
     }
   rescue

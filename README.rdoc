@@ -133,6 +133,9 @@ Use _mongo_tail_ type in source.
 
       tag app.mongo_log
 
+      # waiting time when there is no next document. default is 1s.
+      wait_time 5
+
       # Convert 'time'(BSON's time) to fluent time(Unix time).
       time_key time
 
