@@ -106,8 +106,8 @@ class MongoOutputTest < Test::Unit::TestCase
 
   def emit_invalid_documents(d)
     time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-    d.emit({'a' => 3, '$last' => '石動'}, time)
-    d.emit({'a' => 4, 'first' => '菖蒲'.encode('EUC-JP').force_encoding('UTF-8')}, time)
+    d.emit({'a' => 3, 'b' => "c", '$last' => '石動'}, time)
+    d.emit({'a' => 4, 'b' => "d", 'first' => '菖蒲'.encode('EUC-JP').force_encoding('UTF-8')}, time)
     time
   end
 
@@ -124,6 +124,36 @@ class MongoOutputTest < Test::Unit::TestCase
     assert_equal([3, 4], @db.collection(collection_name).find({Fluent::MongoOutput::BROKEN_DATA_KEY => {'$exists' => true}}).map { |doc|
       Marshal.load(doc[Fluent::MongoOutput::BROKEN_DATA_KEY].to_s)['a']
     }.sort)
+  end
+
+  def test_write_with_invalid_recoreds_with_exclude_one_broken_fields
+    d = create_driver(default_config + %[
+      exclude_broken_fields a
+    ])
+    t = emit_documents(d)
+    t = emit_invalid_documents(d)
+
+    d.run
+    documents = get_documents
+    assert_equal(4, documents.size)
+    assert_equal(2, documents.select { |e| e.has_key?(Fluent::MongoOutput::BROKEN_DATA_KEY) }.size)
+    assert_equal([1, 2, 3, 4], documents.select { |e| e.has_key?('a') }.map { |e| e['a'] }.sort)
+    assert_equal(0, documents.select { |e| e.has_key?('b') }.size)
+  end
+
+  def test_write_with_invalid_recoreds_with_exclude_two_broken_fields
+    d = create_driver(default_config + %[
+      exclude_broken_fields a,b
+    ])
+    t = emit_documents(d)
+    t = emit_invalid_documents(d)
+
+    d.run
+    documents = get_documents
+    assert_equal(4, documents.size)
+    assert_equal(2, documents.select { |e| e.has_key?(Fluent::MongoOutput::BROKEN_DATA_KEY) }.size)
+    assert_equal([1, 2, 3, 4], documents.select { |e| e.has_key?('a') }.map { |e| e['a'] }.sort)
+    assert_equal(["c", "d"], documents.select { |e| e.has_key?('b') }.map { |e| e['b'] }.sort)
   end
 
   def test_write_with_invalid_recoreds_at_ignore

@@ -169,6 +169,8 @@ You can deserialize broken data using Mongo and Marshal.load. Sample code is bel
       p Marshal.load(doc['__broken_data'].to_s) #=> {"key1": "invalid value", "key2": "valid value"}
     end
 
+=== ignore_invalid_record
+
 If you want to ignore an invalid record, set _true_ to _ignore_invalid_record_ parameter in match.
 
     <match forward.*>
@@ -179,6 +181,23 @@ If you want to ignore an invalid record, set _true_ to _ignore_invalid_record_ p
 
       ...
     </match>
+
+=== exclude_broken_fields
+
+If you want to exclude some fields from broken data marshaling, use _exclude_broken_fields_ to specfiy the keys.
+
+    <match forward.*>
+      ...
+
+      # key2 is excluded from __broken_data.
+      # e.g. {"__broken_data": BinData(0, Marshal.dump result of {"key1": "invalid value"}), "key2": "valid value", "time": ISODate("2012-01-15T21:09:53Z")
+      exclude_broken_fields key2
+
+      ...
+    </match>
+
+Specified value is a comma separated keys(e.g. key1,key2,key3).
+This parameter is useful for excluding shard keys in shard environment.
 
 == Buffer size limitation
 

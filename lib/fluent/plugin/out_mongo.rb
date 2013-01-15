@@ -20,6 +20,7 @@ class MongoOutput < BufferedOutput
   config_param :ignore_invalid_record, :bool, :default => false
   config_param :disable_collection_check, :bool, :default => nil
   config_param :safe, :bool, :default => true
+  config_param :exclude_broken_fields, :string, :default => nil
 
   # tag mapping mode
   config_param :tag_mapped, :bool, :default => false
@@ -51,6 +52,8 @@ class MongoOutput < BufferedOutput
     if remove_tag_prefix = conf['remove_tag_prefix']
       @remove_tag_prefix = Regexp.new('^' + Regexp.escape(remove_tag_prefix))
     end
+
+    @exclude_broken_fields = @exclude_broken_fields.split(',') if @exclude_broken_fields
 
     # capped configuration
     if conf.has_key?('capped')
@@ -136,6 +139,11 @@ class MongoOutput < BufferedOutput
       new_record = {}
       new_record[@tag_key] = record.delete(@tag_key) if @include_tag_key
       new_record[@time_key] = record.delete(@time_key)
+      if @exclude_broken_fields
+        @exclude_broken_fields.each { |key|
+          new_record[key] = record.delete(key)
+        }
+      end
       new_record[BROKEN_DATA_KEY] = BSON::Binary.new(Marshal.dump(record))
       new_record
     }
