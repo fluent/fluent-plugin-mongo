@@ -1,3 +1,8 @@
+Release 0.6.13 - 2012/01/15
+
+	* Add exclude_broken_fields config to output plugins
+
+
 Release 0.6.12 - 2012/12/28
 
 	* Fix mongo 2.2 capped? problem in mongo_tail
