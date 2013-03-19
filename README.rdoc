@@ -208,7 +208,7 @@ MongoDB returns error or mongo-ruby-driver raises an exception.
 
 So, Mongo plugin resets _buffer_chunk_limit_ if configurated value is larger than above limitation:
 - Before v1.8, max of _buffer_chunk_limit_ is 2MB
-- After v1.8, max of _buffer_chunk_limit_ is 10MB
+- After  v1.8, max of _buffer_chunk_limit_ is 8MB
 
 == Disable collection check
 

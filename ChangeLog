@@ -1,3 +1,12 @@
+Release 0.7.0 - 2012/03/20
+
+	* Upgrade mongo gem least version to 1.8
+	* Upgrade fluentd gem least version to 0.10.9
+	* Use new classes with mongo gem version 1.8
+	* Replace safe with write_concern option in output plugins
+	* Change buffer_chunk_limit to 8MB when mongod version is 1.8 or later.
+
+
 Release 0.6.13 - 2012/01/15
 
 	* Add exclude_broken_fields config to output plugins
