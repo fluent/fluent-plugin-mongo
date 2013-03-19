@@ -50,7 +50,7 @@ class MongoOutputReplset < MongoOutput
   end
 
   def get_connection
-    db = Mongo::ReplSetConnection.new(@nodes, @connection_options).db(@database)
+    db = Mongo::MongoReplicaSetClient.new(@nodes, @connection_options).db(@database)
     authenticate(db)
   end
 

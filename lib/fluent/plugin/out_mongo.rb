@@ -19,14 +19,14 @@ class MongoOutput < BufferedOutput
   config_param :port, :integer, :default => 27017
   config_param :ignore_invalid_record, :bool, :default => false
   config_param :disable_collection_check, :bool, :default => nil
-  config_param :safe, :bool, :default => true
   config_param :exclude_broken_fields, :string, :default => nil
+  config_param :write_concern, :integer, :default => nil
 
   # tag mapping mode
   config_param :tag_mapped, :bool, :default => false
   config_param :remove_tag_prefix, :string, :default => nil
 
-  attr_reader :collection_options
+  attr_reader :collection_options, :connection_options
 
   def initialize
     super
@@ -55,7 +55,6 @@ class MongoOutput < BufferedOutput
 
     @exclude_broken_fields = @exclude_broken_fields.split(',') if @exclude_broken_fields
 
-    # capped configuration
     if conf.has_key?('capped')
       raise ConfigError, "'capped_size' parameter is required on <store> of Mongo output" unless conf.has_key?('capped_size')
       @collection_options[:capped] = true
@@ -63,7 +62,7 @@ class MongoOutput < BufferedOutput
       @collection_options[:max] = Config.size_value(conf['capped_max']) if conf.has_key?('capped_max')
     end
 
-    @connection_options[:safe] = @safe
+    @connection_options[:w] = @write_concern unless @write_concern.nil?
 
     # MongoDB uses BSON's Date for time.
     def @timef.format_nocache(time)
@@ -78,11 +77,7 @@ class MongoOutput < BufferedOutput
     get_or_create_collection(@collection) unless @tag_mapped
 
     # From configure for avoding complex method dependency...
-    if @buffer.respond_to?(:buffer_chunk_limit)
-      @buffer.buffer_chunk_limit = available_buffer_chunk_limit
-    else
-      $log.warn "#{Fluent::VERSION} does not have :buffer_chunk_limit. Be careful when insert large documents to MongoDB"
-    end
+    @buffer.buffer_chunk_limit = available_buffer_chunk_limit
 
     super
   end
@@ -147,7 +142,7 @@ class MongoOutput < BufferedOutput
       new_record[BROKEN_DATA_KEY] = BSON::Binary.new(Marshal.dump(record))
       new_record
     }
-    collection.insert(converted_records) # Should create another collection like name_broken?
+    collection.insert(converted_records)
   end
 
   def collect_records(chunk)
@@ -177,7 +172,7 @@ class MongoOutput < BufferedOutput
     if @db.collection_names.include?(collection_name)
       collection = @db.collection(collection_name)
       unless @disable_collection_check
-        capped = [1, true].include?(collection.stats['capped']) # TODO: Remove this check after mongo gem upgrade to 1.7.x
+        capped = collection.capped?
         unless @collection_options[:capped] == capped # TODO: Verify capped configuration
           new_mode = format_collection_mode(@collection_options[:capped])
           old_mode = format_collection_mode(capped)
@@ -196,17 +191,17 @@ class MongoOutput < BufferedOutput
   end
 
   def get_connection
-    db = Mongo::Connection.new(@host, @port, @connection_options).db(@database)
+    db = Mongo::MongoClient.new(@host, @port, @connection_options).db(@database)
     authenticate(db)
   end
 
   # Following limits are heuristic. BSON is sometimes bigger than MessagePack and JSON.
-  LIMIT_BEFORE_v1_8 = 2 * 1024 * 1024  # 2MB  = 4MB  / 2
-  LIMIT_AFTER_v1_8 = 10 * 1024 * 1024  # 10MB = 16MB / 2 + alpha
+  LIMIT_BEFORE_v1_8 = 2 * 1024 * 1024  # 2MB = 4MB  / 2
+  LIMIT_AFTER_v1_8 =  8 * 1024 * 1024  # 8MB = 16MB / 2
 
   def available_buffer_chunk_limit
     begin
-      limit = mongod_version >= "1.8.0" ? LIMIT_AFTER_v1_8 : LIMIT_BEFORE_v1_8  # TODO: each version comparison
+      limit = mongod_version >= "1.8.0" ? LIMIT_AFTER_v1_8 : LIMIT_BEFORE_v1_8
     rescue Mongo::ConnectionFailure => e
       $log.fatal "Failed to connect to 'mongod'. Please restart 'fluentd' after 'mongod' started: #{e}"
       exit!
@@ -214,7 +209,6 @@ class MongoOutput < BufferedOutput
       $log.fatal "Operation failed. Probably, 'mongod' needs an authentication: #{e}"
       exit!
     rescue Exception => e
-      # TODO: should do exit?
       $log.warn "mongo unknown error #{e}, set #{LIMIT_BEFORE_v1_8} to chunk limit"
       limit = LIMIT_BEFORE_v1_8
     end

@@ -29,10 +29,10 @@ OptionParser.new { |opt|
 }
 
 def get_capped_collection(conf)
-  db = Mongo::Connection.new(conf[:h], conf[:p]).db(conf[:d])
+  db = Mongo::MongoClient.new(conf[:h], conf[:p]).db(conf[:d])
   if db.collection_names.include?(conf[:c])
     collection = db.collection(conf[:c])
-    if [1, true].include?(collection.stats['capped']) # older version(2.0.x or earlier) returns 1 
+    if collection.capped?
       collection
     else
       puts "#{conf[:c]} is not capped. mongo-tail can not tail normal collection."

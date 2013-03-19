@@ -32,7 +32,7 @@ class MongoOutputTest < Test::Unit::TestCase
     conf = conf + %[
       port #{@@mongod_port}
     ]
-    @db = Mongo::Connection.new('localhost', @@mongod_port).db(MONGO_DB_DB)
+    @db = Mongo::MongoClient.new('localhost', @@mongod_port).db(MONGO_DB_DB)
     Fluent::Test::BufferedOutputTestDriver.new(Fluent::MongoOutput).configure(conf)
   end
 
@@ -51,9 +51,18 @@ class MongoOutputTest < Test::Unit::TestCase
     assert_equal('localhost', d.instance.host)
     assert_equal(@@mongod_port, d.instance.port)
     assert_equal({:capped => true, :size => 100}, d.instance.collection_options)
+    assert(d.instance.connection_options.empty?)
     # buffer_chunk_limit moved from configure to start
     # I will move this test to correct space after BufferedOutputTestDriver supports start method invoking
     # assert_equal(Fluent::MongoOutput::LIMIT_BEFORE_v1_8, d.instance.instance_variable_get(:@buffer).buffer_chunk_limit)
+  end
+
+  def test_configure_with_write_concern
+    d = create_driver(default_config + %[
+      write_concern 2
+    ])
+
+    assert_equal({:w => 2}, d.instance.connection_options)
   end
 
   def test_format
@@ -198,7 +207,7 @@ class MongoReplOutputTest < MongoOutputTest
   end
 
   def create_driver(conf = default_config)
-    @db = Mongo::ReplSetConnection.new(build_seeds(3), :name => @rs.name).db(MONGO_DB_DB)
+    @db = Mongo::MongoReplicaSetClient.new(build_seeds(3), :name => @rs.name).db(MONGO_DB_DB)
     Fluent::Test::BufferedOutputTestDriver.new(Fluent::MongoOutputReplset).configure(conf)
   end
 
