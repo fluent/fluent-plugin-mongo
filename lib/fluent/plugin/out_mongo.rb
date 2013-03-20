@@ -195,6 +195,11 @@ class MongoOutput < BufferedOutput
     authenticate(db)
   end
 
+  def get_admin_connection
+    db = Mongo::Connection.new(@host, @port, @connection_options).db("admin")
+    authenticate(db)
+  end
+
   # Following limits are heuristic. BSON is sometimes bigger than MessagePack and JSON.
   LIMIT_BEFORE_v1_8 = 2 * 1024 * 1024  # 2MB = 4MB  / 2
   LIMIT_AFTER_v1_8 =  8 * 1024 * 1024  # 8MB = 16MB / 2
@@ -222,7 +227,7 @@ class MongoOutput < BufferedOutput
   end
 
   def mongod_version
-    db = get_connection
+    db = get_admin_connection
     db.command('buildInfo' => 1)['version']
   end
 end
