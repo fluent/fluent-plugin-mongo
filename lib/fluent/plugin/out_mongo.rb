@@ -119,7 +119,8 @@ class MongoOutput < BufferedOutput
       data = collect_records(chunk)
       data.each do |d|
         collection_name = d['collection'] ? d['collection'] : @collection
-        operate(get_or_create_collection(collection_name), data)
+        d.delete('collection')
+        operate(get_or_create_collection(collection_name), d)
       end
     else
       collection_name = @tag_mapped ? chunk.key : @collection
