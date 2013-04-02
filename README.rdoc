@@ -46,6 +46,22 @@ Use _mongo_ type in match.
 
 Tag mapped to MongoDB collection automatically.
 
+=== mongo(record mapped mode)
+
+if record have `collection` attribute, then the record will export into the same name collection in mongo
+    <match forward.*>
+      type mongo
+      database fluent
+
+      # Set 'tag_mapped' if you want to use tag mapped mode.
+      record_mapped
+
+      # This configuration is used if tag not found. Default is 'untagged'.
+      collection misc
+
+      # Other configurations here
+    </match>
+
 ==== Configuration
 
 Use _tag_mapped_ parameter in match of _mongo_ type.
