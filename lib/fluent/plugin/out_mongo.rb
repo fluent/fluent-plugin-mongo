@@ -26,6 +26,9 @@ class MongoOutput < BufferedOutput
   config_param :tag_mapped, :bool, :default => false
   config_param :remove_tag_prefix, :string, :default => nil
 
+  # record mapping mode
+  config_param :record_mapped, :bool, :default => false
+
   attr_reader :collection_options
 
   def initialize
@@ -40,6 +43,10 @@ class MongoOutput < BufferedOutput
 
   def configure(conf)
     super
+
+    if conf.has_key?('record_mapped')
+      @record_mapped = true
+    end
 
     if conf.has_key?('tag_mapped')
       @tag_mapped = true
@@ -108,8 +115,16 @@ class MongoOutput < BufferedOutput
 
   def write(chunk)
     # TODO: See emit comment
-    collection_name = @tag_mapped ? chunk.key : @collection
-    operate(get_or_create_collection(collection_name), collect_records(chunk))
+    if @record_mapped
+      data = collect_records(chunk)
+      data.each do |d|
+        collection_name = d['collection'] ? d['collection'] : @collection
+        operate(get_or_create_collection(collection_name), data)
+      end
+    else
+      collection_name = @tag_mapped ? chunk.key : @collection
+      operate(get_or_create_collection(collection_name), collect_records(chunk))
+    end
   end
 
   private
