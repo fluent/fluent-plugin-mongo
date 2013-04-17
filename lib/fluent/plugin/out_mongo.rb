@@ -222,8 +222,16 @@ class MongoOutput < BufferedOutput
   end
 
   def mongod_version
-    db = get_connection
-    db.command('buildInfo' => 1)['version']
+    version = nil
+
+    begin
+      version = get_connection.command('buildInfo' => 1)['version']
+    rescue Mongo::OperationFailure
+      # fallback for buggy mongod version support
+      version = authenticate(Mongo::MongoClient.new(@host, @port, @connection_options).db('admin')).command('buildInfo' => 1)['version']
+    end
+
+    version
   end
 end
 
