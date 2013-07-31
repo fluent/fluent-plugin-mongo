@@ -1,4 +1,11 @@
-Release 0.7.0 - 2012/03/20
+Release 0.7.1 - 2013/07/31
+
+	* Fix incomprehensible code indent
+	* Remove mongo_backup output
+	* Fix getting version from mongod for broken mongod support
+
+
+Release 0.7.0 - 2013/03/20
 
 	* Upgrade mongo gem least version to 1.8
 	* Upgrade fluentd gem least version to 0.10.9
@@ -7,7 +14,7 @@ Release 0.7.0 - 2012/03/20
 	* Change buffer_chunk_limit to 8MB when mongod version is 1.8 or later.
 
 
-Release 0.6.13 - 2012/01/15
+Release 0.6.13 - 2013/01/15
 
 	* Add exclude_broken_fields config to output plugins
 
