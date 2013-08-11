@@ -1,15 +1,18 @@
-module Fluent
+require 'fluentd/plugin/buffered_output'
+
+module Fluentd
+  module Plugin
   class MongoOutput < BufferedOutput
     Plugin.register_output('mongo', self)
 
-    require 'fluent/plugin/mongo_util'
+    require 'fluentd/plugin/mongo_util'
     include MongoUtil
 
-    include SetTagKeyMixin
-    config_set_default :include_tag_key, false
+    #include SetTagKeyMixin
+    #config_set_default :include_tag_key, false
 
-    include SetTimeKeyMixin
-    config_set_default :include_time_key, true
+    #include SetTimeKeyMixin
+    #config_set_default :include_time_key, true
 
     config_param :database, :string
     config_param :collection, :string, :default => 'untagged'
@@ -19,6 +22,8 @@ module Fluent
     config_param :disable_collection_check, :bool, :default => nil
     config_param :exclude_broken_fields, :string, :default => nil
     config_param :write_concern, :integer, :default => nil
+    config_param :capped_size, :size, :default => nil
+    config_param :capped_value, :size, :default => nil
 
     # tag mapping mode
     config_param :tag_mapped, :bool, :default => false
@@ -51,13 +56,14 @@ module Fluent
         @remove_tag_prefix = Regexp.new('^' + Regexp.escape(remove_tag_prefix))
       end
 
-      @exclude_broken_fields = @exclude_broken_fields.split(',') if @exclude_broken_fields
+      # TODO: Replace :string with :array
+      @exclude_broken_fields = eval(@exclude_broken_fields) if @exclude_broken_fields
 
       if conf.has_key?('capped')
         raise ConfigError, "'capped_size' parameter is required on <store> of Mongo output" unless conf.has_key?('capped_size')
         @collection_options[:capped] = true
-        @collection_options[:size] = Config.size_value(conf['capped_size'])
-        @collection_options[:max] = Config.size_value(conf['capped_max']) if conf.has_key?('capped_max')
+        @collection_options[:size] = conf['capped_size']
+        @collection_options[:max] = conf['capped_max'] if conf.has_key?('capped_max')
       end
 
       @connection_options[:w] = @write_concern unless @write_concern.nil?
@@ -67,7 +73,7 @@ module Fluent
         time
       end
 
-      $log.debug "Setup mongo configuration: mode = #{@tag_mapped ? 'tag mapped' : 'normal'}"
+      Fluentd.log.debug "Setup mongo configuration: mode = #{@tag_mapped ? 'tag mapped' : 'normal'}"
     end
 
     def start
@@ -201,18 +207,18 @@ module Fluent
       begin
         limit = mongod_version >= "1.8.0" ? LIMIT_AFTER_v1_8 : LIMIT_BEFORE_v1_8
       rescue Mongo::ConnectionFailure => e
-        $log.fatal "Failed to connect to 'mongod'. Please restart 'fluentd' after 'mongod' started: #{e}"
+        Fluentd.log.fatal "Failed to connect to 'mongod'. Please restart 'fluentd' after 'mongod' started: #{e}"
         exit!
       rescue Mongo::OperationFailure => e
-        $log.fatal "Operation failed. Probably, 'mongod' needs an authentication: #{e}"
+        Fluentd.log.fatal "Operation failed. Probably, 'mongod' needs an authentication: #{e}"
         exit!
       rescue Exception => e
-        $log.warn "mongo unknown error #{e}, set #{LIMIT_BEFORE_v1_8} to chunk limit"
+        Fluentd.log.warn "mongo unknown error #{e}, set #{LIMIT_BEFORE_v1_8} to chunk limit"
         limit = LIMIT_BEFORE_v1_8
       end
 
       if @buffer.buffer_chunk_limit > limit
-        $log.warn ":buffer_chunk_limit(#{@buffer.buffer_chunk_limit}) is large. Reset :buffer_chunk_limit with #{limit}"
+        Fluentd.log.warn ":buffer_chunk_limit(#{@buffer.buffer_chunk_limit}) is large. Reset :buffer_chunk_limit with #{limit}"
         limit
       else
         @buffer.buffer_chunk_limit
@@ -231,5 +237,6 @@ module Fluent
 
       version
     end
+  end
   end
 end

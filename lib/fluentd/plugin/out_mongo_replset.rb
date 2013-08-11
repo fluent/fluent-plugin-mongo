@@ -1,6 +1,7 @@
-require 'fluent/plugin/out_mongo'
+require_relative 'out_mongo'
 
-module Fluent
+module Fluentd
+  module Plugin
   class MongoOutputReplset < MongoOutput
     Plugin.register_output('mongo_replset', self)
 
@@ -18,7 +19,7 @@ module Fluent
     def configure(conf)
       super
 
-      @nodes = parse_nodes(conf['nodes'])
+      @nodes = conf['nodes']
       if name = conf['name']
         @connection_options[:name] = conf['name']
       end
@@ -32,7 +33,7 @@ module Fluent
         @connection_options[:refresh_interval] = refresh_interval
       end
 
-      $log.debug "Setup replica set configuration: nodes = #{conf['nodes']}"
+      Fluentd.log.debug "Setup replica set configuration: nodes = #{conf['nodes']}"
     end
 
     private
@@ -41,10 +42,6 @@ module Fluent
       rescue_connection_failure do
         super(collection, records)
       end
-    end
-
-    def parse_nodes(nodes)
-      nodes.split(',')
     end
 
     def get_connection
@@ -60,10 +57,11 @@ module Fluent
         retries += 1
         raise e if retries > @num_retries
 
-        $log.warn "Failed to connect to Replica Set. Try to retry: retry number = #{retries}"
+        Fluentd.log.warn "Failed to connect to Replica Set. Try to retry: retry number = #{retries}"
         sleep 0.5
         retry
       end
     end
+  end
   end
 end

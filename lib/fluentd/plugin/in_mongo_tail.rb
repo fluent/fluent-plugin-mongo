@@ -1,8 +1,11 @@
-module Fluent
+require 'fluentd/plugin/input'
+
+module Fluentd
+  module Plugin
   class MongoTailInput < Input
     Plugin.register_input('mongo_tail', self)
 
-    require 'fluent/plugin/mongo_util'
+    require_relative 'mongo_util'
     include MongoUtil
 
     config_param :database, :string
@@ -34,7 +37,7 @@ module Fluent
 
       @last_id = @id_store_file ? get_last_id : nil
 
-      $log.debug "Setup mongo_tail configuration: mode = #{@id_store_file ? 'persistent' : 'non-persistent'}"
+      Fluentd.log.debug "Setup mongo_tail configuration: mode = #{@id_store_file ? 'persistent' : 'non-persistent'}"
     end
 
     def start
@@ -71,10 +74,10 @@ module Fluent
         raise ConfigError, "'#{@database}.#{@collection}' is not capped: node = #{@host}:#{@port}" unless collection.capped?
         collection
       rescue Mongo::ConnectionFailure => e
-        $log.fatal "Failed to connect to 'mongod'. Please restart 'fluentd' after 'mongod' started: #{e}"
+        Fluentd.log.fatal "Failed to connect to 'mongod'. Please restart 'fluentd' after 'mongod' started: #{e}"
         exit!
       rescue Mongo::OperationFailure => e
-        $log.fatal "Operation failed. Probably, 'mongod' needs an authentication: #{e}"
+        Fluentd.log.fatal "Operation failed. Probably, 'mongod' needs an authentication: #{e}"
         exit!
       end
     end
@@ -102,7 +105,7 @@ module Fluent
           end
 
           # Should use MultiEventStream?
-          Engine.emit(tag, time, doc)
+          collector.emit(tag, time, doc)
         else
           sleep @wait_time
         end
@@ -138,5 +141,6 @@ module Fluent
       @file.pos = 0
       @file.write(@last_id)
     end
+  end
   end
 end

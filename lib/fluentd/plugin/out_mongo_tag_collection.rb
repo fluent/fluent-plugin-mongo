@@ -1,6 +1,6 @@
-require 'fluent/plugin/out_mongo'
+require_relative 'fluentd/plugin/out_mongo'
 
-module Fluent
+module Fluentd
   class MongoOutputTagCollection < MongoOutput
     Plugin.register_output('mongo_tag_collection', self)
 
