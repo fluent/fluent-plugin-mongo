@@ -182,6 +182,20 @@ If you want to ignore an invalid record, set _true_ to _ignore_invalid_record_ p
       ...
     </match>
 
+=== ignore_duplicate_key_error
+
+If you want to ignore duplicate key error, E11000, set _true_ to _ignore_duplicate_key_error_ parameter in match.
+
+    <match forward.*>
+      ...
+
+      # ignore duplicate key error at write operation
+      ignore_duplicate_key_error true
+
+      ...
+    </match>
+
+
 === exclude_broken_fields
 
 If you want to exclude some fields from broken data marshaling, use _exclude_broken_fields_ to specfiy the keys.
