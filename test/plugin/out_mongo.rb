@@ -178,22 +178,6 @@ class MongoOutputTest < Test::Unit::TestCase
     assert_equal([1, 2], documents.select { |e| e.has_key?('a') }.map { |e| e['a'] }.sort)
     assert_equal(true, @db.collection(collection_name).find({Fluent::MongoOutput::BROKEN_DATA_KEY => {'$exists' => true}}).count.zero?)
   end
-
-  def test_write_with_duplicate_key_error_at_ignore
-    d = create_driver(default_config + %[
-      ignore_duplicate_key_error true
-    ])
-
-    @db.collection(collection_name).ensure_index({a: 1}, {unique: true, dropDups: true})
-    begin
-      t = emit_documents(d)
-      t = emit_documents(d)
-      d.run
-    rescue Mongo::OperationFailure => e
-      assert_not_equal(11000, e.error_code)
-    end
-
-  end
 end
 
 class MongoReplOutputTest < MongoOutputTest
