@@ -16,7 +16,6 @@ module Fluent
     config_param :host, :string, :default => 'localhost'
     config_param :port, :integer, :default => 27017
     config_param :ignore_invalid_record, :bool, :default => false
-    config_param :ignore_duplicate_key_error, :bool, :default => false
     config_param :disable_collection_check, :bool, :default => nil
     config_param :exclude_broken_fields, :string, :default => nil
     config_param :write_concern, :integer, :default => nil
@@ -121,8 +120,6 @@ module Fluent
         # Probably, all records of _records_ are broken...
         if e.error_code == 13066  # 13066 means "Message contains no documents"
           operate_invalid_records(collection, records) unless @ignore_invalid_record
-        elsif e.error_code == 11000 and @ignore_duplicate_key_error
-          # 11000 means "Duplicate key error", ignoring it
         else
           raise e
         end
