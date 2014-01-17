@@ -19,6 +19,8 @@ module Fluent
     config_param :disable_collection_check, :bool, :default => nil
     config_param :exclude_broken_fields, :string, :default => nil
     config_param :write_concern, :integer, :default => nil
+    config_param :replace_dot_in_key_with, :string, :default => nil
+    config_param :replace_dollar_in_key_with, :string, :default => nil
 
     # tag mapping mode
     config_param :tag_mapped, :bool, :default => false
@@ -116,6 +118,17 @@ module Fluent
 
     def operate(collection, records)
       begin
+        if @replace_dot_in_key_with
+          records.map! do |r|
+            r.extend(HashHelper).replace_key(".", @replace_dot_in_key_with)
+          end
+        end
+        if @replace_dollar_in_key_with
+          records.map! do |r|
+            r.extend(HashHelper).replace_key(/^\$/, @replace_dollar_in_key_with)
+          end
+        end
+
         record_ids, error_records = collection.insert(records, INSERT_ARGUMENT)
         if !@ignore_invalid_record and error_records.size > 0
           operate_invalid_records(collection, error_records)
@@ -234,6 +247,22 @@ module Fluent
       end
 
       version
+    end
+  end
+
+  module HashHelper
+    def replace_key(pattern, replacement)
+      hash = Hash.new
+      self.each_pair do |k, v|
+        k = k.gsub(pattern, replacement)
+
+        if v.is_a?(Hash)
+          hash[k] = v.extend(HashHelper).replace_key(pattern, replacement)
+        else
+          hash[k] = (v.dup rescue v)
+        end
+      end
+      hash
     end
   end
 end

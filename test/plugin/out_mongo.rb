@@ -120,6 +120,26 @@ class MongoOutputTest < Test::Unit::TestCase
     time
   end
 
+  def test_write_with_invalid_recoreds_with_keys_containing_dot_and_dollar
+    d = create_driver(default_config + %[
+      replace_dot_in_key_with _dot_
+      replace_dollar_in_key_with _dollar_
+    ])
+
+    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
+    d.emit({
+      "foo.bar" => {
+        "$foo$bar" => "baz"
+      }
+    }, time)
+    d.run
+
+    documents = get_documents
+    assert_equal(1, documents.size)
+    assert_equal("baz", documents[0]["foo_dot_bar"]["_dollar_foo$bar"])
+    assert_equal(0, documents.select { |e| e.has_key?(Fluent::MongoOutput::BROKEN_DATA_KEY)}.size)
+  end
+
   def test_write_with_invalid_recoreds
     d = create_driver
     t = emit_documents(d)
