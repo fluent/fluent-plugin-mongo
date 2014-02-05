@@ -14,7 +14,7 @@ module Fluent
         @remove_tag_prefix = Regexp.new('^' + Regexp.escape(remove_prefix_collection))
       end
 
-      $log.warn "'mongo_tag_collection' deprecated. Please use 'mongo' type with 'tag_mapped' parameter"
+      log.warn "'mongo_tag_collection' deprecated. Please use 'mongo' type with 'tag_mapped' parameter"
     end
   end
 end

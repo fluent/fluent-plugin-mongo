@@ -19,6 +19,10 @@ module Fluent
     # To store last ObjectID
     config_param :id_store_file, :string, :default => nil
 
+    unless method_defined?(:log)
+      define_method(:log) { $log }
+    end
+
     def initialize
       super
       require 'mongo'
@@ -71,10 +75,10 @@ module Fluent
         raise ConfigError, "'#{@database}.#{@collection}' is not capped: node = #{@host}:#{@port}" unless collection.capped?
         collection
       rescue Mongo::ConnectionFailure => e
-        $log.fatal "Failed to connect to 'mongod'. Please restart 'fluentd' after 'mongod' started: #{e}"
+        log.fatal "Failed to connect to 'mongod'. Please restart 'fluentd' after 'mongod' started: #{e}"
         exit!
       rescue Mongo::OperationFailure => e
-        $log.fatal "Operation failed. Probably, 'mongod' needs an authentication: #{e}"
+        log.fatal "Operation failed. Probably, 'mongod' needs an authentication: #{e}"
         exit!
       end
     end

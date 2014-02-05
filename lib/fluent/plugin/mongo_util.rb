@@ -14,7 +14,7 @@ module MongoUtil
       begin
         db.authenticate(@user, @password)
       rescue Mongo::AuthenticationError => e
-        $log.fatal e
+        log.fatal e
         exit!
       end
     end

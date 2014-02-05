@@ -60,7 +60,7 @@ module Fluent
         retries += 1
         raise e if retries > @num_retries
 
-        $log.warn "Failed to connect to Replica Set. Try to retry: retry number = #{retries}"
+        log.warn "Failed to connect to Replica Set. Try to retry: retry number = #{retries}"
         sleep 0.5
         retry
       end

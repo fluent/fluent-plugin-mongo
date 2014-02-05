@@ -26,6 +26,10 @@ module Fluent
 
     attr_reader :collection_options, :connection_options
 
+    unless method_defined?(:log)
+      define_method(:log) { $log }
+    end
+
     def initialize
       super
       require 'mongo'
@@ -201,18 +205,18 @@ module Fluent
       begin
         limit = mongod_version >= "1.8.0" ? LIMIT_AFTER_v1_8 : LIMIT_BEFORE_v1_8
       rescue Mongo::ConnectionFailure => e
-        $log.fatal "Failed to connect to 'mongod'. Please restart 'fluentd' after 'mongod' started: #{e}"
+        log.fatal "Failed to connect to 'mongod'. Please restart 'fluentd' after 'mongod' started: #{e}"
         exit!
       rescue Mongo::OperationFailure => e
-        $log.fatal "Operation failed. Probably, 'mongod' needs an authentication: #{e}"
+        log.fatal "Operation failed. Probably, 'mongod' needs an authentication: #{e}"
         exit!
       rescue Exception => e
-        $log.warn "mongo unknown error #{e}, set #{LIMIT_BEFORE_v1_8} to chunk limit"
+        log.warn "mongo unknown error #{e}, set #{LIMIT_BEFORE_v1_8} to chunk limit"
         limit = LIMIT_BEFORE_v1_8
       end
 
       if @buffer.buffer_chunk_limit > limit
-        $log.warn ":buffer_chunk_limit(#{@buffer.buffer_chunk_limit}) is large. Reset :buffer_chunk_limit with #{limit}"
+        log.warn ":buffer_chunk_limit(#{@buffer.buffer_chunk_limit}) is large. Reset :buffer_chunk_limit with #{limit}"
         limit
       else
         @buffer.buffer_chunk_limit
