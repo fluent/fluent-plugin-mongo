@@ -1,6 +1,6 @@
-= MongoDB plugin for Fluentd
+= MongoDB plugin for {Fluentd}[http://github.com/fluent/fluentd]
 
-fluent-plugin-mongo provides input and output plugins for {Fluentd}[http://fluentd.org/].
+fluent-plugin-mongo provides input and output plugins for {Fluentd}[http://fluentd.org] ({GitHub}[http://github.com/fluent/fluentd])
 
 = Installation
 
