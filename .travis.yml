@@ -3,7 +3,7 @@ rvm:
  - 1.9.3
  - 2.0.0
  - 2.1.0
- - rbx-19mode
+ - rbx
 
 before_script:
   - git submodule update -i
@@ -12,4 +12,4 @@ script: mongod=mongod bundle exec rake test
 
 matrix:
   allow_failures:
-    - rvm: rbx-19mode
+    - rvm: rbx
