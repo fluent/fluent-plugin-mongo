@@ -120,12 +120,12 @@ module Fluent
       begin
         if @replace_dot_in_key_with
           records.map! do |r|
-            r.extend(HashHelper).replace_key(".", @replace_dot_in_key_with)
+            replace_key_of_hash(r, ".", @replace_dot_in_key_with)
           end
         end
         if @replace_dollar_in_key_with
           records.map! do |r|
-            r.extend(HashHelper).replace_key(/^\$/, @replace_dollar_in_key_with)
+            replace_key_of_hash(r, /^\$/, @replace_dollar_in_key_with)
           end
         end
 
@@ -248,21 +248,19 @@ module Fluent
 
       version
     end
-  end
 
-  module HashHelper
-    def replace_key(pattern, replacement)
-      hash = Hash.new
-      self.each_pair do |k, v|
+    def replace_key_of_hash(hash, pattern, replacement)
+      result = Hash.new
+      hash.each_pair do |k, v|
         k = k.gsub(pattern, replacement)
 
         if v.is_a?(Hash)
-          hash[k] = v.extend(HashHelper).replace_key(pattern, replacement)
+          result[k] = replace_key_of_hash(v, pattern, replacement)
         else
-          hash[k] = (v.dup rescue v)
+          result[k] = (v.dup rescue v)
         end
       end
-      hash
+      result
     end
   end
 end
