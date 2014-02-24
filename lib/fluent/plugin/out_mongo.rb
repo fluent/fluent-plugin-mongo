@@ -26,6 +26,9 @@ module Fluent
     config_param :tag_mapped, :bool, :default => false
     config_param :remove_tag_prefix, :string, :default => nil
 
+    # SSL connection
+    config_param :ssl, :bool, :default => false
+
     attr_reader :collection_options, :connection_options
 
     unless method_defined?(:log)
@@ -67,6 +70,7 @@ module Fluent
       end
 
       @connection_options[:w] = @write_concern unless @write_concern.nil?
+      @connection_options[:ssl] = @ssl
 
       # MongoDB uses BSON's Date for time.
       def @timef.format_nocache(time)

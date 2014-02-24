@@ -19,6 +19,9 @@ module Fluent
     # To store last ObjectID
     config_param :id_store_file, :string, :default => nil
 
+    # SSL connection
+    config_param :ssl, :bool, :default => false
+
     unless method_defined?(:log)
       define_method(:log) { $log }
     end
@@ -27,6 +30,8 @@ module Fluent
       super
       require 'mongo'
       require 'bson'
+
+      @connection_options = {}
     end
 
     def configure(conf)
@@ -37,6 +42,7 @@ module Fluent
       end
 
       @last_id = @id_store_file ? get_last_id : nil
+      @connection_options[:ssl] = @ssl
 
       $log.debug "Setup mongo_tail configuration: mode = #{@id_store_file ? 'persistent' : 'non-persistent'}"
     end
@@ -69,7 +75,7 @@ module Fluent
 
     def get_capped_collection
       begin
-        db = authenticate(Mongo::Connection.new(@host, @port).db(@database))
+        db = authenticate(Mongo::Connection.new(@host, @port, @connection_options).db(@database))
         raise ConfigError, "'#{@database}.#{@collection}' not found: node = #{@host}:#{@port}" unless db.collection_names.include?(@collection)
         collection = db.collection(@collection)
         raise ConfigError, "'#{@database}.#{@collection}' is not capped: node = #{@host}:#{@port}" unless collection.capped?
