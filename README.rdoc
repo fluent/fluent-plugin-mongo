@@ -199,6 +199,21 @@ If you want to exclude some fields from broken data marshaling, use _exclude_bro
 Specified value is a comma separated keys(e.g. key1,key2,key3).
 This parameter is useful for excluding shard keys in shard environment.
 
+=== replace_dot_in_key_with and replace_dollar_in_key_with
+
+BSON records which include '.' or start with '$' are invalid and they will be stored as broken data to MongoDB. If you want to sanitize keys, you can use _replace_dot_in_key_with_ and _replace_dollar_in_key_with_.
+
+    <match forward.*>
+      ...
+      # replace '.' in keys with '__dot__'
+      replace_dot_in_key_with __dot__
+    
+      # replace '$' in keys with '__dollar__'
+      # Note: This replaces '$' only on first character
+      replace_dollar_in_key_with __dollar__
+      ...
+    </match>
+
 == Buffer size limitation
 
 Mongo plugin has the limitation of buffer size.
