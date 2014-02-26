@@ -128,15 +128,17 @@ class MongoOutputTest < Test::Unit::TestCase
 
     time = Time.parse("2011-01-02 13:14:15 UTC").to_i
     d.emit({
-      "foo.bar" => {
-        "$foo$bar" => "baz"
-      }
+      "foo.bar" => [
+        {
+          "$foo$bar" => "baz"
+        }
+      ]
     }, time)
     d.run
 
     documents = get_documents
     assert_equal(1, documents.size)
-    assert_equal("baz", documents[0]["foo_dot_bar"]["_dollar_foo$bar"])
+    assert_equal("baz", documents[0]["foo_dot_bar"][0]["_dollar_foo$bar"])
     assert_equal(0, documents.select { |e| e.has_key?(Fluent::MongoOutput::BROKEN_DATA_KEY)}.size)
   end
 

@@ -249,18 +249,25 @@ module Fluent
       version
     end
 
-    def replace_key_of_hash(hash, pattern, replacement)
-      result = Hash.new
-      hash.each_pair do |k, v|
-        k = k.gsub(pattern, replacement)
-
-        if v.is_a?(Hash)
-          result[k] = replace_key_of_hash(v, pattern, replacement)
-        else
-          result[k] = (v.dup rescue v)
+    def replace_key_of_hash(hash_or_array, pattern, replacement)
+      case hash_or_array
+      when Array
+        hash_or_array.map do |elm|
+          replace_key_of_hash(elm, pattern, replacement)
         end
+      when Hash
+        result = Hash.new
+        hash_or_array.each_pair do |k, v|
+          k = k.gsub(pattern, replacement)
+
+          if v.is_a?(Hash) || v.is_a?(Array)
+            result[k] = replace_key_of_hash(v, pattern, replacement)
+          else
+            result[k] = (v.dup rescue v)
+          end
+        end
+        result
       end
-      result
     end
   end
 end
