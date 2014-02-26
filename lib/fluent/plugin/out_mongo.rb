@@ -263,7 +263,7 @@ module Fluent
           if v.is_a?(Hash) || v.is_a?(Array)
             result[k] = replace_key_of_hash(v, pattern, replacement)
           else
-            result[k] = (v.dup rescue v)
+            result[k] = v
           end
         end
         result
