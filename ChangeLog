@@ -1,3 +1,10 @@
+Release 0.7.3 - 2014/03/09
+
+	* Add replace_dot_in_key_with and replace_dollar_in_key_with parameters to sanitize invalid key
+	* Add ssl parameter to enable SSL connection
+	* Relax gem version dependency
+
+
 Release 0.7.2 - 2014/02/05
 
 	* Support log_level option
