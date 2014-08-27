@@ -25,6 +25,7 @@ class MongoOutputTest < Test::Unit::TestCase
       type mongo
       database #{MONGO_DB_DB}
       collection #{collection_name}
+      include_time_key true # TestDriver ignore config_set_default?
     ]
   end
 
@@ -237,6 +238,7 @@ class MongoReplOutputTest < MongoOutputTest
       collection #{collection_name}
       nodes #{build_seeds(3).join(',')}
       num_retries 30
+      include_time_key true # TestDriver ignore config_set_default?
     ]
   end
 
@@ -266,3 +268,4 @@ class MongoReplOutputTest < MongoOutputTest
     assert_equal({:ssl => false}, d.instance.connection_options)
   end
 end
+

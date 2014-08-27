@@ -3,3 +3,5 @@
 /coverage/
 /vendor/
 Gemfile.lock
+/test/plugin/data/
+/test/tools/data/
