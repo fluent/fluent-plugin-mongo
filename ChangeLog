@@ -1,3 +1,9 @@
+Release 0.7.4 - 2014/11/10
+
+	* Sanitize keys of each hash of an array
+	* Add config_set_default to mongo_replset
+
+
 Release 0.7.3 - 2014/03/09
 
 	* Add replace_dot_in_key_with and replace_dollar_in_key_with parameters to sanitize invalid key
