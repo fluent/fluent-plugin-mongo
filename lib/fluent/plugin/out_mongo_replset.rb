@@ -4,6 +4,9 @@ module Fluent
   class MongoOutputReplset < MongoOutput
     Plugin.register_output('mongo_replset', self)
 
+    config_set_default :include_tag_key, false
+    config_set_default :include_time_key, true
+
     config_param :nodes, :string
     config_param :name, :string, :default => nil
     config_param :read, :string, :default => nil
