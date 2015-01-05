@@ -1,3 +1,8 @@
+Release 0.7.5 - 2015/01/05
+
+	* Add journaled option to support journaled write
+
+
 Release 0.7.4 - 2014/11/10
 
 	* Sanitize keys of each hash of an array
