@@ -19,6 +19,7 @@ module Fluent
     config_param :disable_collection_check, :bool, :default => nil
     config_param :exclude_broken_fields, :string, :default => nil
     config_param :write_concern, :integer, :default => nil
+    config_param :journaled, :bool, :default => false
     config_param :replace_dot_in_key_with, :string, :default => nil
     config_param :replace_dollar_in_key_with, :string, :default => nil
 
@@ -70,6 +71,7 @@ module Fluent
       end
 
       @connection_options[:w] = @write_concern unless @write_concern.nil?
+      @connection_options[:j] = @journaled
       @connection_options[:ssl] = @ssl
 
       # MongoDB uses BSON's Date for time.
