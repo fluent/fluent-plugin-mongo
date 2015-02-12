@@ -1,3 +1,8 @@
+Release 0.7.6 - 2015/02/12
+
+	* Relax fluentd dependency to support v0.12 or later
+
+
 Release 0.7.5 - 2015/01/05
 
 	* Add journaled option to support journaled write
