@@ -5,11 +5,12 @@ module Fluent
     require 'fluent/plugin/mongo_util'
     include MongoUtil
 
-    config_param :database, :string
+    config_param :database, :string, :default => nil
     config_param :collection, :string
     config_param :host, :string, :default => 'localhost'
     config_param :port, :integer, :default => 27017
     config_param :wait_time, :integer, :default => 1
+    config_param :url, :string, :default => nil
 
     config_param :tag, :string, :default => nil
     config_param :tag_key, :string, :default => nil
@@ -39,6 +40,14 @@ module Fluent
 
       if !@tag and !@tag_key
         raise ConfigError, "'tag' or 'tag_key' option is required on mongo_tail input"
+      end
+
+      if @database && @url
+        raise ConfigError, "Both 'database' and 'url' can not be set"
+      end
+
+      if !@database && !@url
+        raise ConfigError, "One of 'database' or 'url' must be specified"
       end
 
       @last_id = @id_store_file ? get_last_id : nil
@@ -90,10 +99,10 @@ module Fluent
 
     def get_capped_collection
       begin
-        db = authenticate(Mongo::Connection.new(@host, @port, @connection_options).db(@database))
-        raise ConfigError, "'#{@database}.#{@collection}' not found: node = #{@host}:#{@port}" unless db.collection_names.include?(@collection)
+        db = get_database
+        raise ConfigError, "'#{database_name}.#{@collection}' not found: node = #{node_string}" unless db.collection_names.include?(@collection)
         collection = db.collection(@collection)
-        raise ConfigError, "'#{@database}.#{@collection}' is not capped: node = #{@host}:#{@port}" unless collection.capped?
+        raise ConfigError, "'#{database_name}.#{@collection}' is not capped: node = #{node_string}" unless collection.capped?
         collection
       rescue Mongo::ConnectionFailure => e
         log.fatal "Failed to connect to 'mongod'. Please restart 'fluentd' after 'mongod' started: #{e}"
@@ -101,6 +110,34 @@ module Fluent
       rescue Mongo::OperationFailure => e
         log.fatal "Operation failed. Probably, 'mongod' needs an authentication: #{e}"
         exit!
+      end
+    end
+    
+    def get_database
+      case
+      when @database
+        authenticate(Mongo::Connection.new(@host, @port, @connection_options).db(@database))
+      when @url
+        parser = Mongo::URIParser.new(@url)
+        parser.connection.db(parser.db_name)
+      end
+    end
+    
+    def database_name
+      case
+      when @database
+        @database
+      when @url
+        Mongo::URIParser.new(@url).db_name
+      end
+    end
+    
+    def node_string
+      case
+      when @database
+        "#{@host}:#{@port}"
+      when @url
+        @url
       end
     end
 

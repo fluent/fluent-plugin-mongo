@@ -143,6 +143,17 @@ Use _mongo_tail_ type in source.
       id_store_file /Users/repeatedly/devel/fluent-plugin-mongo/last_id
     </source>
 
+You can also use _url_ to specify the database to connect.
+
+    <source>
+      type mongo_tail
+      url mongodb://user:password@192.168.0.13:10249,192.168.0.14:10249/database
+      collection capped_log
+      ...
+    </source>
+
+This allows the plugin to read data from a replica set.
+
 = NOTE
 
 == Broken data as a BSON
