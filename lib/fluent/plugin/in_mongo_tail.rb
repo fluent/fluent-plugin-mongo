@@ -60,6 +60,7 @@ module Fluent
         @file.close
       end
 
+      @stop = true
       @thread.join
       @client.db.connection.close
       super
@@ -70,6 +71,8 @@ module Fluent
         cursor = Mongo::Cursor.new(@client, cursor_conf)
         begin
           loop {
+            return if @stop
+            
             cursor = Mongo::Cursor.new(@client, cursor_conf) unless cursor.alive?
             if doc = cursor.next_document
               process_document(doc)
