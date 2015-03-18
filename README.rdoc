@@ -138,9 +138,6 @@ Use _mongo_tail_ type in source.
 
       # Convert 'time'(BSON's time) to fluent time(Unix time).
       time_key time
-
-      # You can store last ObjectId to tail over server's shutdown
-      id_store_file /Users/repeatedly/devel/fluent-plugin-mongo/last_id
     </source>
 
 You can also use _url_ to specify the database to connect.
@@ -153,6 +150,24 @@ You can also use _url_ to specify the database to connect.
     </source>
 
 This allows the plugin to read data from a replica set.
+
+You can save last ObjectId to tail over server's shutdown to file.
+
+    <source>
+      ...
+
+      id_store_file /Users/repeatedly/devel/fluent-plugin-mongo/last_id
+    </source>
+
+Or Mongo collection can be used to keep last ObjectID.
+
+    <source>
+      ...
+
+      id_store_collection last_id
+    </source>
+
+Make sure the collection is capped. The plugin inserts records but does not remove at all.
 
 = NOTE
 

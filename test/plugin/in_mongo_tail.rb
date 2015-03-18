@@ -13,6 +13,7 @@ class MongoTailInputTest < Test::Unit::TestCase
     tag_key tag
     time_key time
     id_store_file /tmp/fluent_mongo_last_id
+    id_store_collection test_last_id
   ]
 
   def create_driver(conf = CONFIG)
@@ -28,6 +29,7 @@ class MongoTailInputTest < Test::Unit::TestCase
     assert_equal('tag', d.instance.tag_key)
     assert_equal('time', d.instance.time_key)
     assert_equal('/tmp/fluent_mongo_last_id', d.instance.id_store_file)
+    assert_equal('test_last_id', d.instance.id_store_collection)
   end
   
   def test_url_configration

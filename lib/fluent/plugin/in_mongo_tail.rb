@@ -19,6 +19,7 @@ module Fluent
 
     # To store last ObjectID
     config_param :id_store_file, :string, :default => nil
+    config_param :id_store_collection, :string, :default => nil
 
     # SSL connection
     config_param :ssl, :bool, :default => false
@@ -53,7 +54,7 @@ module Fluent
       @last_id = get_last_id
       @connection_options[:ssl] = @ssl
 
-      $log.debug "Setup mongo_tail configuration: mode = #{@id_store_file ? 'persistent' : 'non-persistent'}"
+      $log.debug "Setup mongo_tail configuration: mode = #{@id_store_file || @id_store_collection ? 'persistent' : 'non-persistent'}, last_id = #{@last_id}"
     end
 
     def start
@@ -176,26 +177,43 @@ module Fluent
         @id_storage = File.open(@id_store_file, 'w')
         @id_storege.sync
       end
+      
+      if @id_store_collection
+        @id_storage = get_database.collection(@id_store_collection)
+      end
     end
     
     def close_id_storage
-      if @id_storage
+      if @id_storage.is_a?(File)
         @id_storage.close
       end
     end
 
     def get_last_id
-      if @id_store_file && File.exist?(@id_store_file)
-        BSON::ObjectId(File.read(@id_store_file)).to_s rescue nil
-      else
+      begin
+        if @id_store_file && File.exist?(@id_store_file)
+          return BSON::ObjectId(File.read(@id_store_file)).to_s
+        end
+      
+        if @id_store_collection
+          collection = get_database.collection(@id_store_collection)
+          count = collection.find.count
+          doc = collection.find.skip(count - 1).limit(1).first
+          return doc && doc["last_id"]
+        end
+      rescue
         nil
       end
     end
 
     def save_last_id(last_id)
-      if @id_storage
+      if @id_storage.is_a?(File)
         @id_storage.pos = 0
         @id_storage.write(last_id)
+      end
+      
+      if @id_storage.is_a?(Mongo::Collection)
+        @id_storage.insert("last_id" => last_id)
       end
     end
   end
