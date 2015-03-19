@@ -60,6 +60,7 @@ module Fluent
         @file.close
       end
 
+      @stop = true
       @thread.join
       @client.db.connection.close
       super
@@ -67,7 +68,21 @@ module Fluent
 
     def run
       loop {
-        tailoop(Mongo::Cursor.new(@client, cursor_conf))
+        cursor = Mongo::Cursor.new(@client, cursor_conf)
+        begin
+          loop {
+            return if @stop
+            
+            cursor = Mongo::Cursor.new(@client, cursor_conf) unless cursor.alive?
+            if doc = cursor.next_document
+              process_document(doc)
+            else
+              sleep @wait_time
+            end
+          }
+        rescue
+          # ignore Mongo::OperationFailuer at CURSOR_NOT_FOUND
+        end
       }
     end
 
@@ -89,36 +104,27 @@ module Fluent
       end
     end
 
-    def tailoop(cursor)
-      loop {
-        cursor = Mongo::Cursor.new(@client, cursor_conf) unless cursor.alive?
-        if doc = cursor.next_document
-          time = if @time_key
-                   t = doc.delete(@time_key)
-                   t.nil? ? Engine.now : t.to_i
-                 else
-                   Engine.now
-                 end
-          tag = if @tag_key
-                  t = doc.delete(@tag_key)
-                  t.nil? ? 'mongo.missing_tag' : t
-                else
-                  @tag
-                end
-          if id = doc.delete('_id')
-            @last_id = id.to_s
-            doc['_id_str'] = @last_id
-            save_last_id if @id_store_file
-          end
+    def process_document(doc)
+      time = if @time_key
+               t = doc.delete(@time_key)
+               t.nil? ? Engine.now : t.to_i
+             else
+               Engine.now
+             end
+      tag = if @tag_key
+              t = doc.delete(@tag_key)
+              t.nil? ? 'mongo.missing_tag' : t
+            else
+              @tag
+            end
+      if id = doc.delete('_id')
+        @last_id = id.to_s
+        doc['_id_str'] = @last_id
+        save_last_id if @id_store_file
+      end
 
-          # Should use MultiEventStream?
-          Engine.emit(tag, time, doc)
-        else
-          sleep @wait_time
-        end
-      }
-    rescue
-      # ignore Mongo::OperationFailuer at CURSOR_NOT_FOUND
+      # Should use MultiEventStream?
+      Engine.emit(tag, time, doc)
     end
 
     def cursor_conf
