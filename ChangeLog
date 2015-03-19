@@ -1,3 +1,8 @@
+Release 0.7.7 - 2015/03/19
+
+	* Fix in_mongo_tail shutdown mechanizm for handling stop sequence correctly.
+
+
 Release 0.7.6 - 2015/02/12
 
 	* Relax fluentd dependency to support v0.12 or later
