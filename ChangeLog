@@ -1,3 +1,8 @@
+Release 0.7.9 - 2015/04/01
+
+	* Force to use mongo gem v1
+
+
 Release 0.7.8 - 2015/03/23
 
 	* Add url option to support URL configuration for MongoDB connection
