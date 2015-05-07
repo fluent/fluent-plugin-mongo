@@ -29,6 +29,11 @@ module Fluent
 
     # SSL connection
     config_param :ssl, :bool, :default => false
+    config_param :ssl_cert, :string, :default => nil
+    config_param :ssl_key, :string, :default => nil
+    config_param :ssl_key_pass_phrase, :string, :default => nil
+    config_param :ssl_verify, :bool, :default => false
+    config_param :ssl_ca_cert, :string, :default => nil
 
     attr_reader :collection_options, :connection_options
 
@@ -73,6 +78,13 @@ module Fluent
       @connection_options[:w] = @write_concern unless @write_concern.nil?
       @connection_options[:j] = @journaled
       @connection_options[:ssl] = @ssl
+      @connection_options[:ssl_cert] = @ssl_cert
+      @connection_options[:ssl_key] = @ssl_key
+      @connection_options[:ssl_key_pass_phrase] = @ssl_key_pass_phrase
+      @connection_options[:ssl_verify] = @ssl_verify
+      @connection_options[:ssl_ca_cert] = @ssl_ca_cert
+
+      # MongoDB uses BSON's Date for time.
 
       # MongoDB uses BSON's Date for time.
       def @timef.format_nocache(time)
