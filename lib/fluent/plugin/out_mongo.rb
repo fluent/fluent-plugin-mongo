@@ -78,11 +78,13 @@ module Fluent
       @connection_options[:w] = @write_concern unless @write_concern.nil?
       @connection_options[:j] = @journaled
       @connection_options[:ssl] = @ssl
-      @connection_options[:ssl_cert] = @ssl_cert
-      @connection_options[:ssl_key] = @ssl_key
-      @connection_options[:ssl_key_pass_phrase] = @ssl_key_pass_phrase
-      @connection_options[:ssl_verify] = @ssl_verify
-      @connection_options[:ssl_ca_cert] = @ssl_ca_cert
+      if conf.has_key?('ssl')
+       @connection_options[:ssl_cert] = @ssl_cert
+       @connection_options[:ssl_key] = @ssl_key
+       @connection_options[:ssl_key_pass_phrase] = @ssl_key_pass_phrase
+       @connection_options[:ssl_verify] = @ssl_verify
+       @connection_options[:ssl_ca_cert] = @ssl_ca_cert
+      end
 
       # MongoDB uses BSON's Date for time.
 
