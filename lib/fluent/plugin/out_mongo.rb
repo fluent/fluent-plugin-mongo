@@ -85,9 +85,6 @@ module Fluent
        @connection_options[:ssl_verify] = @ssl_verify
        @connection_options[:ssl_ca_cert] = @ssl_ca_cert
       end
-
-      # MongoDB uses BSON's Date for time.
-
       # MongoDB uses BSON's Date for time.
       def @timef.format_nocache(time)
         time
