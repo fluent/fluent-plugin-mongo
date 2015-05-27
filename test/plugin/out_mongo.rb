@@ -79,7 +79,7 @@ class MongoOutputTest < Test::Unit::TestCase
       ssl true
     ])
 
-    assert_equal({:ssl => true, :j => false}, d.instance.connection_options)
+    assert_equal({:ssl => true, :j => false, :ssl_cert=>nil, :ssl_key=>nil, :ssl_key_pass_phrase=>nil, :ssl_verify=>false, :ssl_ca_cert=>nil}, d.instance.connection_options)
   end
 
   def test_format
