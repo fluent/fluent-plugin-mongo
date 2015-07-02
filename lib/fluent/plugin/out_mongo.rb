@@ -31,7 +31,7 @@ module Fluent
     config_param :ssl, :bool, :default => false
     config_param :ssl_cert, :string, :default => nil
     config_param :ssl_key, :string, :default => nil
-    config_param :ssl_key_pass_phrase, :string, :default => nil
+    config_param :ssl_key_pass_phrase, :string, :default => nil, :secret => true
     config_param :ssl_verify, :bool, :default => false
     config_param :ssl_ca_cert, :string, :default => nil
 
