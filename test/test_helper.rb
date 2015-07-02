@@ -3,9 +3,6 @@ $LOAD_PATH.unshift(File.dirname(__FILE__))
 
 require 'rr'
 require 'test/unit'
-class Test::Unit::TestCase
-  include RR::Adapters::TestUnit
-end
 
 if ENV['SIMPLE_COV']
   require 'simplecov'
