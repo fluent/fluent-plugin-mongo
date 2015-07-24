@@ -6,6 +6,7 @@ Gem::Specification.new do |gem|
   gem.description = "MongoDB plugin for Fluentd"
   gem.homepage    = "https://github.com/fluent/fluent-plugin-mongo"
   gem.summary     = gem.description
+  gem.licenses    = ["Apache-2.0"]
   gem.version     = File.read("VERSION").strip
   gem.authors     = ["Masahiro Nakagawa"]
   gem.email       = "repeatedly@gmail.com"
