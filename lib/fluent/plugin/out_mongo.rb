@@ -24,6 +24,7 @@ module Fluent
     config_param :replace_dollar_in_key_with, :string, :default => nil
 
     # tag mapping mode
+    config_param :json_msg, :bool, :default => false
     config_param :tag_mapped, :bool, :default => false
     config_param :remove_tag_prefix, :string, :default => nil
 
@@ -53,6 +54,10 @@ module Fluent
 
     def configure(conf)
       super
+
+      if conf.has_key?('json_msg')
+        @json_msg = true
+      end
 
       if conf.has_key?('tag_mapped')
         @tag_mapped = true
@@ -184,6 +189,11 @@ module Fluent
       records = []
       chunk.msgpack_each { |time, record|
         record[@time_key] = Time.at(time || record[@time_key]) if @include_time_key
+        if @json_msg
+          if record['msg'] != nil
+            record['msg'] = JSON.parse(record['msg'])
+          end
+        end
         records << record
       }
       records
