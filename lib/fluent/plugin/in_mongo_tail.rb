@@ -161,7 +161,7 @@ module Fluent
       end
 
       # Should use MultiEventStream?
-      Engine.emit(tag, time, doc)
+      router.emit(tag, time, doc)
     end
 
     def cursor_conf
