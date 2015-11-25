@@ -52,7 +52,7 @@ class MongoOutputTest < Test::Unit::TestCase
     assert_equal('localhost', d.instance.host)
     assert_equal(@@mongod_port, d.instance.port)
     assert_equal({:capped => true, :size => 100}, d.instance.collection_options)
-    assert_equal({:ssl => false, :j => false}, d.instance.connection_options)
+    assert_equal({:ssl => false, :pool_size => 1, :j => false}, d.instance.connection_options)
     # buffer_chunk_limit moved from configure to start
     # I will move this test to correct space after BufferedOutputTestDriver supports start method invoking
     # assert_equal(Fluent::MongoOutput::LIMIT_BEFORE_v1_8, d.instance.instance_variable_get(:@buffer).buffer_chunk_limit)
@@ -63,7 +63,7 @@ class MongoOutputTest < Test::Unit::TestCase
       write_concern 2
     ])
 
-    assert_equal({:w => 2, :ssl => false, :j => false}, d.instance.connection_options)
+    assert_equal({:w => 2, :pool_size => 1, :ssl => false, :j => false}, d.instance.connection_options)
   end
 
   def test_configure_with_journaled
@@ -71,7 +71,7 @@ class MongoOutputTest < Test::Unit::TestCase
       journaled true
     ])
 
-    assert_equal({:ssl => false, :j => true}, d.instance.connection_options)
+    assert_equal({:ssl => false, :pool_size => 1, :j => true}, d.instance.connection_options)
   end
 
   def test_configure_with_ssl
@@ -79,7 +79,7 @@ class MongoOutputTest < Test::Unit::TestCase
       ssl true
     ])
 
-    assert_equal({:ssl => true, :j => false, :ssl_cert=>nil, :ssl_key=>nil, :ssl_key_pass_phrase=>nil, :ssl_verify=>false, :ssl_ca_cert=>nil}, d.instance.connection_options)
+    assert_equal({:ssl => true, :pool_size => 1, :j => false, :ssl_cert=>nil, :ssl_key=>nil, :ssl_key_pass_phrase=>nil, :ssl_verify=>false, :ssl_ca_cert=>nil}, d.instance.connection_options)
   end
 
   def test_format
@@ -273,7 +273,7 @@ class MongoReplOutputTest < MongoOutputTest
     assert_equal(build_seeds(3), d.instance.nodes)
     assert_equal(45, d.instance.num_retries)
     assert_equal({:capped => true, :size => 100}, d.instance.collection_options)
-    assert_equal({:ssl => false, :j => false}, d.instance.connection_options)
+    assert_equal({:ssl => false, :pool_size => 1, :j => false}, d.instance.connection_options)
   end
 end
 
