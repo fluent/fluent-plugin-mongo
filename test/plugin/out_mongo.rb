@@ -52,7 +52,7 @@ class MongoOutputTest < Test::Unit::TestCase
     assert_equal('localhost', d.instance.host)
     assert_equal(@@mongod_port, d.instance.port)
     assert_equal({:capped => true, :size => 100}, d.instance.collection_options)
-    assert_equal({:ssl => false, :j => false}, d.instance.connection_options)
+    assert_equal({:ssl => false, :pool_size => 1, :j => false}, d.instance.connection_options)
     # buffer_chunk_limit moved from configure to start
     # I will move this test to correct space after BufferedOutputTestDriver supports start method invoking
     # assert_equal(Fluent::MongoOutput::LIMIT_BEFORE_v1_8, d.instance.instance_variable_get(:@buffer).buffer_chunk_limit)
@@ -273,7 +273,7 @@ class MongoReplOutputTest < MongoOutputTest
     assert_equal(build_seeds(3), d.instance.nodes)
     assert_equal(45, d.instance.num_retries)
     assert_equal({:capped => true, :size => 100}, d.instance.collection_options)
-    assert_equal({:ssl => false, :j => false}, d.instance.connection_options)
+    assert_equal({:ssl => false, :pool_size => 1, :j => false}, d.instance.connection_options)
   end
 end
 
