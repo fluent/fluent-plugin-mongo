@@ -63,7 +63,7 @@ class MongoOutputTest < Test::Unit::TestCase
       write_concern 2
     ])
 
-    assert_equal({:w => 2, :ssl => false, :j => false}, d.instance.connection_options)
+    assert_equal({:w => 2, :pool_size => 1, :ssl => false, :j => false}, d.instance.connection_options)
   end
 
   def test_configure_with_journaled
@@ -71,7 +71,7 @@ class MongoOutputTest < Test::Unit::TestCase
       journaled true
     ])
 
-    assert_equal({:ssl => false, :j => true}, d.instance.connection_options)
+    assert_equal({:ssl => false, :pool_size => 1, :j => true}, d.instance.connection_options)
   end
 
   def test_configure_with_ssl
@@ -79,7 +79,7 @@ class MongoOutputTest < Test::Unit::TestCase
       ssl true
     ])
 
-    assert_equal({:ssl => true, :j => false, :ssl_cert=>nil, :ssl_key=>nil, :ssl_key_pass_phrase=>nil, :ssl_verify=>false, :ssl_ca_cert=>nil}, d.instance.connection_options)
+    assert_equal({:ssl => true, :pool_size => 1, :j => false, :ssl_cert=>nil, :ssl_key=>nil, :ssl_key_pass_phrase=>nil, :ssl_verify=>false, :ssl_ca_cert=>nil}, d.instance.connection_options)
   end
 
   def test_format
