@@ -1,3 +1,10 @@
+Release 0.7.11 - 2015/11/26
+
+	* Add secret option to related parameters
+	* Support label in input plugin
+	* Add socket_pool_size parameter
+
+
 Release 0.7.10 - 2015/05/28
 
 	* Add SSL authentication options
