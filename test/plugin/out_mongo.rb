@@ -233,18 +233,25 @@ class MongoOutputTest < Test::Unit::TestCase
 end
 
 class MongoReplOutputTest < Test::Unit::TestCase
-  include MongoTestHelper
   include MongoOutputTestCases
+
+  class << self
+    def startup
+      setup_rs
+    end
+
+    def shutdown
+      teardown_rs
+    end
+  end
 
   def setup
     Fluent::Test.setup
     require 'fluent/plugin/out_mongo_replset'
-
-    ensure_rs
   end
 
   def teardown
-    @rs.restart_killed_nodes
+    @@rs.restart_killed_nodes
     if defined?(@db) && @db
       @db.collection(collection_name).drop
       @db.connection.close
@@ -263,7 +270,7 @@ class MongoReplOutputTest < Test::Unit::TestCase
   end
 
   def create_driver(conf = default_config)
-    @db = Mongo::MongoReplicaSetClient.new(build_seeds(3), :name => @rs.name).db(MONGO_DB_DB)
+    @db = Mongo::MongoReplicaSetClient.new(build_seeds(3), :name => @@rs.name).db(MONGO_DB_DB)
     Fluent::Test::BufferedOutputTestDriver.new(Fluent::MongoOutputReplset).configure(conf)
   end
 
