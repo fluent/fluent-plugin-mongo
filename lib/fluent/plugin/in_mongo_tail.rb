@@ -65,7 +65,7 @@ module Fluent
     end
 
     def shutdown
-      save_last_id(@last_id)
+      save_last_id(@last_id) unless @last_id
       close_id_storage
 
       @stop = true
