@@ -172,19 +172,25 @@ module MongoOutputTestCases
 end
 
 class MongoOutputTest < Test::Unit::TestCase
-  include MongoTestHelper
   include MongoOutputTestCases
+
+  class << self
+    def startup
+      MongoTestHelper.setup_mongod
+    end
+
+    def shutdown
+      MongoTestHelper.teardown_mongod
+    end
+  end
 
   def setup
     Fluent::Test.setup
     require 'fluent/plugin/out_mongo'
-
-    setup_mongod
   end
 
   def teardown
     @db.collection(collection_name).drop
-    teardown_mongod
   end
 
   def default_config
@@ -198,9 +204,9 @@ class MongoOutputTest < Test::Unit::TestCase
 
   def create_driver(conf = default_config)
     conf = conf + %[
-      port #{@@mongod_port}
+      port #{MongoTestHelper.mongod_port}
     ]
-    @db = Mongo::MongoClient.new('localhost', @@mongod_port).db(MONGO_DB_DB)
+    @db = Mongo::MongoClient.new('localhost', MongoTestHelper.mongod_port).db(MONGO_DB_DB)
     Fluent::Test::BufferedOutputTestDriver.new(Fluent::MongoOutput).configure(conf)
   end
 
@@ -217,7 +223,7 @@ class MongoOutputTest < Test::Unit::TestCase
     assert_equal('fluent_test', d.instance.database)
     assert_equal('test_collection', d.instance.collection)
     assert_equal('localhost', d.instance.host)
-    assert_equal(@@mongod_port, d.instance.port)
+    assert_equal(MongoTestHelper.mongod_port, d.instance.port)
     assert_equal({:capped => true, :size => 100}, d.instance.collection_options)
     assert_equal({:ssl => false, :pool_size => 1, :j => false}, d.instance.connection_options)
     # buffer_chunk_limit moved from configure to start
