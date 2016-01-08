@@ -1,61 +1,9 @@
 # -*- coding: utf-8 -*-
 require 'tools/rs_test_helper'
 
-class MongoOutputTest < Test::Unit::TestCase
-  include MongoTestHelper
-
-  def setup
-    Fluent::Test.setup
-    require 'fluent/plugin/out_mongo'
-
-    setup_mongod
-  end
-
-  def teardown
-    @db.collection(collection_name).drop
-    teardown_mongod
-  end
-
+module MongoOutputTestCases
   def collection_name
     'test'
-  end
-
-  def default_config
-    %[
-      type mongo
-      database #{MONGO_DB_DB}
-      collection #{collection_name}
-      include_time_key true # TestDriver ignore config_set_default?
-    ]
-  end
-
-  def create_driver(conf = default_config)
-    conf = conf + %[
-      port #{@@mongod_port}
-    ]
-    @db = Mongo::MongoClient.new('localhost', @@mongod_port).db(MONGO_DB_DB)
-    Fluent::Test::BufferedOutputTestDriver.new(Fluent::MongoOutput).configure(conf)
-  end
-
-  def test_configure
-    d = create_driver(%[
-      type mongo
-      database fluent_test
-      collection test_collection
-
-      capped
-      capped_size 100
-    ])
-
-    assert_equal('fluent_test', d.instance.database)
-    assert_equal('test_collection', d.instance.collection)
-    assert_equal('localhost', d.instance.host)
-    assert_equal(@@mongod_port, d.instance.port)
-    assert_equal({:capped => true, :size => 100}, d.instance.collection_options)
-    assert_equal({:ssl => false, :pool_size => 1, :j => false}, d.instance.connection_options)
-    # buffer_chunk_limit moved from configure to start
-    # I will move this test to correct space after BufferedOutputTestDriver supports start method invoking
-    # assert_equal(Fluent::MongoOutput::LIMIT_BEFORE_v1_8, d.instance.instance_variable_get(:@buffer).buffer_chunk_limit)
   end
 
   def test_configure_with_write_concern
@@ -223,7 +171,65 @@ class MongoOutputTest < Test::Unit::TestCase
   end
 end
 
-class MongoReplOutputTest < MongoOutputTest
+class MongoOutputTest < Test::Unit::TestCase
+  include MongoTestHelper
+  include MongoOutputTestCases
+
+  def setup
+    Fluent::Test.setup
+    require 'fluent/plugin/out_mongo'
+
+    setup_mongod
+  end
+
+  def teardown
+    @db.collection(collection_name).drop
+    teardown_mongod
+  end
+
+  def default_config
+    %[
+      type mongo
+      database #{MONGO_DB_DB}
+      collection #{collection_name}
+      include_time_key true # TestDriver ignore config_set_default?
+    ]
+  end
+
+  def create_driver(conf = default_config)
+    conf = conf + %[
+      port #{@@mongod_port}
+    ]
+    @db = Mongo::MongoClient.new('localhost', @@mongod_port).db(MONGO_DB_DB)
+    Fluent::Test::BufferedOutputTestDriver.new(Fluent::MongoOutput).configure(conf)
+  end
+
+  def test_configure
+    d = create_driver(%[
+      type mongo
+      database fluent_test
+      collection test_collection
+
+      capped
+      capped_size 100
+    ])
+
+    assert_equal('fluent_test', d.instance.database)
+    assert_equal('test_collection', d.instance.collection)
+    assert_equal('localhost', d.instance.host)
+    assert_equal(@@mongod_port, d.instance.port)
+    assert_equal({:capped => true, :size => 100}, d.instance.collection_options)
+    assert_equal({:ssl => false, :pool_size => 1, :j => false}, d.instance.connection_options)
+    # buffer_chunk_limit moved from configure to start
+    # I will move this test to correct space after BufferedOutputTestDriver supports start method invoking
+    # assert_equal(Fluent::MongoOutput::LIMIT_BEFORE_v1_8, d.instance.instance_variable_get(:@buffer).buffer_chunk_limit)
+  end
+end
+
+class MongoReplOutputTest < Test::Unit::TestCase
+  include MongoTestHelper
+  include MongoOutputTestCases
+
   def setup
     Fluent::Test.setup
     require 'fluent/plugin/out_mongo_replset'
