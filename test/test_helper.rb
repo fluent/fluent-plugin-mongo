@@ -34,7 +34,8 @@ MONGO_DB_PATH = File.join(File.dirname(__FILE__), 'plugin', 'data')
 
 module MongoTestHelper
   def self.cleanup_mongod_env
-    system("killall mongod")
+    Process.kill "TERM", @@pid
+    Process.waitpid @@pid
     system("rm -rf #{MONGO_DB_PATH}")
   end
 
