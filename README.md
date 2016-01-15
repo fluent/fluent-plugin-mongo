@@ -1,24 +1,24 @@
-= MongoDB plugin for {Fluentd}[http://github.com/fluent/fluentd]
+# MongoDB plugin for [Fluentd](http://github.com/fluent/fluentd)
 
-fluent-plugin-mongo provides input and output plugins for {Fluentd}[http://fluentd.org] ({GitHub}[http://github.com/fluent/fluentd])
+fluent-plugin-mongo provides input and output plugins for [Fluentd](http://fluentd.org) ([GitHub](http://github.com/fluent/fluentd))
 
-= Installation
+# Installation
 
-== Gems
+## Gems
 
 The gem is hosted at {Rubygems.org}[http://rubygems.org]. You can install the gem as follows:
 
     $ fluent-gem install fluent-plugin-mongo
 
-= Plugins
+# Plugins
 
-== Output plugin
+## Output plugin
 
-=== mongo
+### mongo
 
 Store Fluentd event to MongoDB database.
 
-==== Configuration
+#### Configuration
 
 Use _mongo_ type in match.
 
@@ -42,11 +42,11 @@ Use _mongo_ type in match.
       # Other buffer configurations here
     </match>
 
-=== mongo(tag mapped mode)
+### mongo(tag mapped mode)
 
 Tag mapped to MongoDB collection automatically.
 
-==== Configuration
+#### Configuration
 
 Use _tag_mapped_ parameter in match of _mongo_ type.
 
@@ -69,11 +69,11 @@ If tag name is "foo.bar", auto create collection "foo.bar" and insert data.
       # Other configurations here
     </match>
 
-=== mongo_replset
+### mongo_replset
 
 Replica Set version of mongo.
 
-==== Configuration
+#### Configuration
 
 Use _mongo_replset_ type in match.
 
@@ -97,11 +97,11 @@ Use _mongo_replset_ type in match.
       #refresh_interval 60
     </match>
 
-=== mongo_backup
+### mongo_backup
 
 Store Fluentd event to local capped collection for backup.
 
-==== Configuration
+#### Configuration
 
 Use _mongo_backup_ type in match. _mongo_backup_ alwalys use capped collection.
 
@@ -116,13 +116,13 @@ Use _mongo_backup_ type in match. _mongo_backup_ alwalys use capped collection.
       </store>
     </match>
 
-== Input plugin
+## Input plugin
 
-=== mongo_tail
+### mongo_tail
 
 Tail capped collection to input data.
 
-==== Configuration
+#### Configuration
 
 Use _mongo_tail_ type in source.
 
@@ -154,9 +154,9 @@ You can also use _url_ to specify the database to connect.
 
 This allows the plugin to read data from a replica set.
 
-= NOTE
+# NOTE
 
-== Broken data as a BSON
+## Broken data as a BSON
 
 Fluentd event sometimes has an invalid record as a BSON.
 In such case, Mongo plugin marshals an invalid record using Marshal.dump
@@ -180,7 +180,7 @@ You can deserialize broken data using Mongo and Marshal.load. Sample code is bel
       p Marshal.load(doc['__broken_data'].to_s) #=> {"key1": "invalid value", "key2": "valid value"}
     end
 
-=== ignore_invalid_record
+### ignore_invalid_record
 
 If you want to ignore an invalid record, set _true_ to _ignore_invalid_record_ parameter in match.
 
@@ -193,7 +193,7 @@ If you want to ignore an invalid record, set _true_ to _ignore_invalid_record_ p
       ...
     </match>
 
-=== exclude_broken_fields
+### exclude_broken_fields
 
 If you want to exclude some fields from broken data marshaling, use _exclude_broken_fields_ to specfiy the keys.
 
@@ -210,7 +210,7 @@ If you want to exclude some fields from broken data marshaling, use _exclude_bro
 Specified value is a comma separated keys(e.g. key1,key2,key3).
 This parameter is useful for excluding shard keys in shard environment.
 
-=== replace_dot_in_key_with and replace_dollar_in_key_with
+### replace_dot_in_key_with and replace_dollar_in_key_with
 
 BSON records which include '.' or start with '$' are invalid and they will be stored as broken data to MongoDB. If you want to sanitize keys, you can use _replace_dot_in_key_with_ and _replace_dollar_in_key_with_.
 
@@ -225,7 +225,7 @@ BSON records which include '.' or start with '$' are invalid and they will be st
       ...
     </match>
 
-== Buffer size limitation
+## Buffer size limitation
 
 Mongo plugin has the limitation of buffer size.
 Because MongoDB and mongo-ruby-driver checks the total object size at each insertion.
@@ -236,7 +236,7 @@ So, Mongo plugin resets _buffer_chunk_limit_ if configurated value is larger tha
 - Before v1.8, max of _buffer_chunk_limit_ is 2MB
 - After  v1.8, max of _buffer_chunk_limit_ is 8MB
 
-== Disable collection check
+## Disable collection check
 
 Mongo plugin checks a collection's configuration to prevent unexpected insertion to existing collection.
 In tag mapped mode, Mongo plugin accesses many collections. In this case, collection checking is not usable
@@ -251,13 +251,13 @@ So, if you disable this checking, put ```disable_collection_check true``` in mat
       ...
     </match>
 
-= Tool
+# Tool
 
 You can tail mongo capped collection.
 
     $ mongo-tail -f
 
-= Test
+# Test
 
 Run following command:
 
@@ -269,14 +269,14 @@ You can use 'mongod' environment variable for specified mongod:
 
 Note that source code in test/tools are from mongo-ruby-driver.
 
-= TODO
+# TODO
 
-== More configuration
+## More configuration
 
 - Multi process
 - etc
 
-= Copyright
+# Copyright
 
-Copyright:: Copyright (c) 2011- Masahiro Nakagawa
-License::   Apache License, Version 2.0
+| Copyright | Copyright (c) 2011- Masahiro Nakagawa |
+| License   | Apache License, Version 2.0           |
