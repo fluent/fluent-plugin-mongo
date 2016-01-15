@@ -5,6 +5,8 @@ rvm:
  - 2.2
  - rbx
 
+before_install:
+  - gem update bundler
 before_script:
   - git submodule update -i
 
