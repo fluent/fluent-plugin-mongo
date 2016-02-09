@@ -1,3 +1,8 @@
+Release 0.7.12 - 2016/02/09
+
+	* Support saving last_id to mongod instead of local file
+
+
 Release 0.7.11 - 2015/11/26
 
 	* Add secret option to related parameters
