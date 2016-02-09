@@ -19,6 +19,7 @@ module Fluent
 
     # To store last ObjectID
     config_param :id_store_file, :string, :default => nil
+    config_param :id_store_collection, :string, :default => nil
 
     # SSL connection
     config_param :ssl, :bool, :default => false
@@ -50,24 +51,22 @@ module Fluent
         raise ConfigError, "One of 'database' or 'url' must be specified"
       end
 
-      @last_id = @id_store_file ? get_last_id : nil
+      @last_id = get_last_id
       @connection_options[:ssl] = @ssl
 
-      $log.debug "Setup mongo_tail configuration: mode = #{@id_store_file ? 'persistent' : 'non-persistent'}"
+      $log.debug "Setup mongo_tail configuration: mode = #{@id_store_file || @id_store_collection ? 'persistent' : 'non-persistent'}, last_id = #{@last_id}"
     end
 
     def start
       super
-      @file = get_id_store_file if @id_store_file
+      open_id_storage
       @client = get_capped_collection
       @thread = Thread.new(&method(:run))
     end
 
     def shutdown
-      if @id_store_file
-        save_last_id
-        @file.close
-      end
+      save_last_id(@last_id) unless @last_id
+      close_id_storage
 
       @stop = true
       @thread.join
@@ -157,7 +156,7 @@ module Fluent
       if id = doc.delete('_id')
         @last_id = id.to_s
         doc['_id_str'] = @last_id
-        save_last_id if @id_store_file
+        save_last_id(@last_id)
       end
 
       # Should use MultiEventStream?
@@ -171,25 +170,51 @@ module Fluent
       conf
     end
 
-    # following methods are used when id_store_file is true
-
-    def get_id_store_file
-      file = File.open(@id_store_file, 'w')
-      file.sync
-      file
+    # following methods are used to read/write last_id
+    
+    def open_id_storage
+      if @id_store_file
+        @id_storage = File.open(@id_store_file, 'w')
+        @id_storege.sync
+      end
+      
+      if @id_store_collection
+        @id_storage = get_database.collection(@id_store_collection)
+      end
+    end
+    
+    def close_id_storage
+      if @id_storage.is_a?(File)
+        @id_storage.close
+      end
     end
 
     def get_last_id
-      if File.exist?(@id_store_file)
-        BSON::ObjectId(File.read(@id_store_file)).to_s rescue nil
-      else
+      begin
+        if @id_store_file && File.exist?(@id_store_file)
+          return BSON::ObjectId(File.read(@id_store_file)).to_s
+        end
+      
+        if @id_store_collection
+          collection = get_database.collection(@id_store_collection)
+          count = collection.find.count
+          doc = collection.find.skip(count - 1).limit(1).first
+          return doc && doc["last_id"]
+        end
+      rescue
         nil
       end
     end
 
-    def save_last_id
-      @file.pos = 0
-      @file.write(@last_id)
+    def save_last_id(last_id)
+      if @id_storage.is_a?(File)
+        @id_storage.pos = 0
+        @id_storage.write(last_id)
+      end
+      
+      if @id_storage.is_a?(Mongo::Collection)
+        @id_storage.insert("last_id" => last_id)
+      end
     end
   end
 end
