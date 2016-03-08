@@ -4,6 +4,10 @@ module Fluent
   class MongoTailInput < Input
     Plugin.register_input('mongo_tail', self)
 
+    unless method_defined?(:log)
+      define_method(:log) { $log }
+    end
+
     require 'fluent/plugin/mongo_auth'
     include MongoAuthParams
     include MongoAuth

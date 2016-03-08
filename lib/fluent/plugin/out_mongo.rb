@@ -4,6 +4,10 @@ module Fluent
   class MongoOutput < BufferedOutput
     Plugin.register_output('mongo', self)
 
+    unless method_defined?(:log)
+      define_method(:log) { $log }
+    end
+
     require 'fluent/plugin/mongo_auth'
     include MongoAuthParams
     include MongoAuth
@@ -125,7 +129,7 @@ module Fluent
 
       configure_logger(@mongo_log_level)
 
-      $log.debug "Setup mongo configuration: mode = #{@tag_mapped ? 'tag mapped' : 'normal'}"
+      log.debug "Setup mongo configuration: mode = #{@tag_mapped ? 'tag mapped' : 'normal'}"
     end
 
     def start
