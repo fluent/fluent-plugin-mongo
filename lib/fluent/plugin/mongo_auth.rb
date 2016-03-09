@@ -6,6 +6,8 @@ module Fluent
         config_param :user, :string, default: nil
         desc "MongoDB password"
         config_param :password, :string, default: nil, secret: true
+        desc "MongoDB authentication database"
+        config_param :auth_source, :string, default: nil
       }
     end
   end
@@ -14,7 +16,11 @@ module Fluent
     def authenticate(client)
       unless @user.nil? || @password.nil?
         begin
-          client = client.with(user: @user, password: @password)
+          if @auth_source.nil?
+            client = client.with(user: @user, password: @password)
+          else
+            client = client.with(user: @user, password: @password, auth_source: @auth_source)
+          end
         rescue Mongo::Auth::Unauthorized => e
           log.fatal e
           exit!
