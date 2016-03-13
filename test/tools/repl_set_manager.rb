@@ -45,8 +45,9 @@ class ReplSetManager
   end
 
   def start_set
-    system("killall mongod")
-    sleep(1)
+    @mongods.keys.each do |node|
+      kill(node)
+    end
     should_start = true
     puts "** Starting a replica set with #{@count} nodes"
 
@@ -79,7 +80,9 @@ class ReplSetManager
   end
 
   def cleanup_set
-    system("killall mongod")
+    @mongods.keys.each do |node|
+      kill(node)
+    end
     @count.times do |n|
       system("rm -rf #{@mongods[n]['db_path']}")
     end
@@ -193,9 +196,11 @@ class ReplSetManager
   end
 
   def kill(node, signal=2)
+    return unless @mongods[node]['up']
+
     pid = @mongods[node]['pid']
     puts "** Killing node with pid #{pid} at port #{@mongods[node]['port']}"
-    system("kill #{pid}")
+    Process.kill signal, pid
     dead = wait_for_death(pid)
     @mongods[node]['up'] = false if dead
   end
@@ -254,7 +259,7 @@ class ReplSetManager
     system(@mongods[node]['start'])
     @mongods[node]['up'] = true
     sleep(0.5)
-    @mongods[node]['pid'] = File.open(File.join(@mongods[node]['db_path'], 'mongod.lock')).read.strip
+    @mongods[node]['pid'] = File.open(File.join(@mongods[node]['db_path'], 'mongod.lock')).read.strip.to_i
   end
   alias :restart :start
 
