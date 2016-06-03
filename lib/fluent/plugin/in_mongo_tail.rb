@@ -1,3 +1,5 @@
+require 'fluent/input'
+
 module Fluent
   class MongoTailInput < Input
     Plugin.register_input('mongo_tail', self)

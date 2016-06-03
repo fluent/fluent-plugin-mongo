@@ -1,9 +1,9 @@
 require 'test_helper'
+require 'fluent/plugin/out_mongo'
 
 class MongoTagCollectionTest < Test::Unit::TestCase
   def setup
     Fluent::Test.setup
-    require 'fluent/plugin/out_mongo'
   end
 
   CONFIG = %[

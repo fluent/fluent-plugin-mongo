@@ -1,3 +1,5 @@
+require 'fluent/output'
+
 module Fluent
   class MongoOutput < BufferedOutput
     Plugin.register_output('mongo', self)

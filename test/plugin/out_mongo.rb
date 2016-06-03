@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 require 'tools/rs_test_helper'
+require 'fluent/plugin/out_mongo'
 
 module MongoOutputTestCases
   def collection_name
@@ -186,7 +187,6 @@ class MongoOutputTest < Test::Unit::TestCase
 
   def setup
     Fluent::Test.setup
-    require 'fluent/plugin/out_mongo'
   end
 
   def teardown

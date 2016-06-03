@@ -1,9 +1,9 @@
 require 'test_helper'
+require 'fluent/plugin/in_mongo_tail'
 
 class MongoTailInputTest < Test::Unit::TestCase
   def setup
     Fluent::Test.setup
-    require 'fluent/plugin/in_mongo_tail'
   end
 
   CONFIG = %[
