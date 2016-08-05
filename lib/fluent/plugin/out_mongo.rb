@@ -276,6 +276,8 @@ module Fluent
           end
         end
         result
+      else
+        hash_or_array
       end
     end
   end
