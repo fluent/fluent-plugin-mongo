@@ -1,3 +1,8 @@
+Release 0.7.14 - 2016/08/06
+
+	* Fix unexpected value generation with replace_xxx parameters
+
+
 Release 0.7.13 - 2016/06/03
 
 	* Add mongodb_smaller_bson_limit parameter to disable MongoDB v1.7 or earlier versions by default.
