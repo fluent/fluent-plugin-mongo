@@ -1,3 +1,8 @@
+Release 0.7.15 - 2016/08/16
+
+	* in_mongo_tail: Add object_id_keys parameter to convert ObjectId object into string
+
+
 Release 0.7.14 - 2016/08/06
 
 	* Fix unexpected value generation with replace_xxx parameters
