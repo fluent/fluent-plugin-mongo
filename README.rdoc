@@ -138,6 +138,9 @@ Use _mongo_tail_ type in source.
 
       # Convert 'time'(BSON's time) to fluent time(Unix time).
       time_key time
+
+      # Convert ObjectId to string
+      object_id_keys ["id_key"]
     </source>
 
 You can also use _url_ to specify the database to connect.
