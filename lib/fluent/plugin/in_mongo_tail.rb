@@ -18,6 +18,7 @@ module Fluent
     config_param :tag_key, :string, :default => nil
     config_param :time_key, :string, :default => nil
     config_param :time_format, :string, :default => nil
+    config_param :object_id_keys, :array, :default => nil
 
     # To store last ObjectID
     config_param :id_store_file, :string, :default => nil
@@ -155,6 +156,12 @@ module Fluent
             else
               @tag
             end
+      if @object_id_keys
+        @object_id_keys.each { |id_key|
+          doc[id_key] = doc[id_key].to_s
+        }
+      end
+
       if id = doc.delete('_id')
         @last_id = id.to_s
         doc['_id_str'] = @last_id
