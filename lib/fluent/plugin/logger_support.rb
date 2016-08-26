@@ -3,7 +3,7 @@ module Fluent
     def self.included(klass)
       klass.instance_eval {
         desc "MongoDB log level"
-        config_param :mongo_log_level, :string, default: 'debug'
+        config_param :mongo_log_level, :string, default: 'info'
       }
     end
 
