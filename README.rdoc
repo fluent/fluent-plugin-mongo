@@ -176,6 +176,8 @@ Make sure the collection is capped. The plugin inserts records but does not remo
 
 == Broken data as a BSON
 
+NOTE: This feature will be removed since v0.8
+
 Fluentd event sometimes has an invalid record as a BSON.
 In such case, Mongo plugin marshals an invalid record using Marshal.dump
 and re-inserts its to same collection as a binary.

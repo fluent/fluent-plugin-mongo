@@ -17,7 +17,8 @@ module Fluent
     config_param :collection, :string, :default => 'untagged'
     config_param :host, :string, :default => 'localhost'
     config_param :port, :integer, :default => 27017
-    config_param :ignore_invalid_record, :bool, :default => false
+    config_param :ignore_invalid_record, :bool, :default => false,
+                 :deprecated => "This parameter will be ignored since v0.8 because mongo driver 2.x doesn't support base functionality for this parameter"
     config_param :disable_collection_check, :bool, :default => nil
     config_param :exclude_broken_fields, :string, :default => nil
     config_param :write_concern, :integer, :default => nil
@@ -83,6 +84,10 @@ module Fluent
       end
 
       super
+
+      unless @ignore_invalid_record
+        log.warn "Since v0.8, invalid record detection will be removed because mongo driver v2.x and API spec don't provide it. You may lose invalid records, so you should not send such records to mongo plugin"
+      end
 
       if conf.has_key?('tag_mapped')
         @tag_mapped = true
