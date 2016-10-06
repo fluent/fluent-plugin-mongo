@@ -1,3 +1,8 @@
+Release 0.7.16 - 2016/10/05
+
+	* out_mongo: Log warn / deprecated message for invalid record handling
+
+
 Release 0.7.15 - 2016/08/16
 
 	* in_mongo_tail: Add object_id_keys parameter to convert ObjectId object into string
