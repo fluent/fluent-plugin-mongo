@@ -203,7 +203,7 @@ module Fluent
 
         @client[collection, @collection_options].insert_many(records)
       rescue Mongo::Error::BulkWriteError => e
-        log.warn e
+        log.warn "#{records.size - e.result["n_inserted"]} documents are not inserted. Maybe these documents are invalid as a BSON."
       rescue ArgumentError => e
         log.warn e
       end
