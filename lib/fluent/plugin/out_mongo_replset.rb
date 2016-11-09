@@ -4,66 +4,55 @@ module Fluent
   class MongoOutputReplset < MongoOutput
     Plugin.register_output('mongo_replset', self)
 
+    unless method_defined?(:log)
+      define_method(:log) { $log }
+    end
+
     config_set_default :include_tag_key, false
     config_set_default :include_time_key, true
 
-    config_param :nodes, :string
-    config_param :name, :string, :default => nil
+    desc "Replica set name"
+    config_param :replica_set, :string
+    desc "Read from specified role"
     config_param :read, :string, :default => nil
-    config_param :refresh_mode, :string, :default => nil
-    config_param :refresh_interval, :integer, :default => nil
+    desc "Retry number"
     config_param :num_retries, :integer, :default => 60
 
-    # disable single node configuration
-    config_param :host, :string, :default => nil
-    config_param :port, :integer, :default => nil
+    unless method_defined?(:log)
+      define_method(:log) { $log }
+    end
 
     def configure(conf)
       super
 
-      @nodes = parse_nodes(conf['nodes'])
-      if name = conf['name']
-        @connection_options[:name] = conf['name']
+      if replica_set = conf['replica_set']
+        @client_options[:replica_set] = replica_set
       end
       if read = conf['read']
-        @connection_options[:read] = read.to_sym
-      end
-      if refresh_mode = conf['refresh_mode']
-        @connection_options[:refresh_mode] = refresh_mode.to_sym
-      end
-      if refresh_interval = conf['refresh_interval']
-        @connection_options[:refresh_interval] = refresh_interval
+        @client_options[:read] = read.to_sym
       end
 
-      $log.debug "Setup replica set configuration: nodes = #{conf['nodes']}"
+      log.debug "Setup replica set configuration: #{conf['replica_set']}"
     end
 
     private
 
-    def operate(collection, records)
+    def operate(client, records)
       rescue_connection_failure do
-        super(collection, records)
+        super(client, records)
       end
-    end
-
-    def parse_nodes(nodes)
-      nodes.split(',')
-    end
-
-    def get_connection
-      db = Mongo::MongoReplicaSetClient.new(@nodes, @connection_options).db(@database)
-      authenticate(db)
     end
 
     def rescue_connection_failure
       retries = 0
       begin
         yield
-      rescue Mongo::ConnectionFailure => e
+      rescue Mongo::Error::OperationFailure => e
         retries += 1
         raise e if retries > @num_retries
 
-        log.warn "Failed to connect to Replica Set. Try to retry: retry number = #{retries}"
+        log.warn "Failed to operate to Replica Set. Try to retry: retry count = #{retries}"
+
         sleep 0.5
         retry
       end

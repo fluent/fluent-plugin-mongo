@@ -4,38 +4,56 @@ module Fluent
   class MongoTailInput < Input
     Plugin.register_input('mongo_tail', self)
 
-    require 'fluent/plugin/mongo_util'
-    include MongoUtil
-
-    config_param :database, :string, :default => nil
-    config_param :collection, :string
-    config_param :host, :string, :default => 'localhost'
-    config_param :port, :integer, :default => 27017
-    config_param :wait_time, :integer, :default => 1
-    config_param :url, :string, :default => nil
-
-    config_param :tag, :string, :default => nil
-    config_param :tag_key, :string, :default => nil
-    config_param :time_key, :string, :default => nil
-    config_param :time_format, :string, :default => nil
-    config_param :object_id_keys, :array, :default => nil
-
-    # To store last ObjectID
-    config_param :id_store_file, :string, :default => nil
-    config_param :id_store_collection, :string, :default => nil
-
-    # SSL connection
-    config_param :ssl, :bool, :default => false
-
     unless method_defined?(:log)
       define_method(:log) { $log }
     end
+
+    # Define `router` method of v0.12 to support v0.10 or earlier
+    unless method_defined?(:router)
+      define_method("router") { ::Fluent::Engine }
+    end
+
+    require 'fluent/plugin/mongo_auth'
+    include MongoAuthParams
+    include MongoAuth
+    require 'fluent/plugin/logger_support'
+    include LoggerSupport
+
+    desc "MongoDB database"
+    config_param :database, :string, default: nil
+    desc "MongoDB collection"
+    config_param :collection, :string
+    desc "MongoDB host"
+    config_param :host, :string, default: 'localhost'
+    desc "MongoDB port"
+    config_param :port, :integer, default: 27017
+    desc "Tailing interval"
+    config_param :wait_time, :integer, default: 1
+    desc "MongoDB node URL"
+    config_param :url, :string, default: nil
+
+    desc "Input tag"
+    config_param :tag, :string, default: nil
+    desc "Treat key as tag"
+    config_param :tag_key, :string, default: nil
+    desc "Treat key as time"
+    config_param :time_key, :string, default: nil
+    desc "Time format"
+    config_param :time_format, :string, default: nil
+    config_param :object_id_keys, :array, default: nil
+
+    desc "To store last ObjectID"
+    config_param :id_store_file, :string, default: nil
+
+    desc "SSL connection"
+    config_param :ssl, :bool, default: false
 
     def initialize
       super
       require 'mongo'
       require 'bson'
 
+      @client_options = {}
       @connection_options = {}
     end
 
@@ -54,86 +72,72 @@ module Fluent
         raise ConfigError, "One of 'database' or 'url' must be specified"
       end
 
-      @last_id = get_last_id
+      @last_id = @id_store_file ? get_last_id : nil
       @connection_options[:ssl] = @ssl
 
-      $log.debug "Setup mongo_tail configuration: mode = #{@id_store_file || @id_store_collection ? 'persistent' : 'non-persistent'}, last_id = #{@last_id}"
+      configure_logger(@mongo_log_level)
     end
 
     def start
       super
-      open_id_storage
-      @client = get_capped_collection
+
+      @file = get_id_store_file if @id_store_file
+      @collection = get_collection
+      # Resume tailing from last inserted id.
+      # Because tailable option is obsoleted since mongo driver 2.0.
+      @last_id = get_last_inserted_id if !@id_store_file and get_last_inserted_id
       @thread = Thread.new(&method(:run))
     end
 
     def shutdown
-      save_last_id(@last_id) unless @last_id
-      close_id_storage
+      if @id_store_file
+        save_last_id
+        @file.close
+      end
 
       @stop = true
       @thread.join
-      @client.db.connection.close
+      @client.close
+
       super
     end
 
     def run
       loop {
-        cursor = Mongo::Cursor.new(@client, cursor_conf)
+        option = {}
         begin
           loop {
             return if @stop
-            
-            cursor = Mongo::Cursor.new(@client, cursor_conf) unless cursor.alive?
-            if doc = cursor.next_document
-              process_document(doc)
+
+            option['_id'] = {'$gt' => BSON::ObjectId(@last_id)} if @last_id
+            documents = @collection.find(option)
+            if documents.count >= 1
+              process_documents(documents)
             else
               sleep @wait_time
             end
           }
         rescue
-          # ignore Mongo::OperationFailuer at CURSOR_NOT_FOUND
+          # ignore Exceptions
         end
       }
     end
 
     private
 
-    def get_capped_collection
-      begin
-        db = get_database
-        raise ConfigError, "'#{database_name}.#{@collection}' not found: node = #{node_string}" unless db.collection_names.include?(@collection)
-        collection = db.collection(@collection)
-        raise ConfigError, "'#{database_name}.#{@collection}' is not capped: node = #{node_string}" unless collection.capped?
-        collection
-      rescue Mongo::ConnectionFailure => e
-        log.fatal "Failed to connect to 'mongod'. Please restart 'fluentd' after 'mongod' started: #{e}"
-        exit!
-      rescue Mongo::OperationFailure => e
-        log.fatal "Operation failed. Probably, 'mongod' needs an authentication: #{e}"
-        exit!
-      end
+    def client
+      @client_options[:database] = @database
+      @client_options[:user] = @user if @user
+      @client_options[:password] = @password if @password
+      Mongo::Client.new(["#{node_string}"], @client_options)
     end
-    
-    def get_database
-      case
-      when @database
-        authenticate(Mongo::Connection.new(@host, @port, @connection_options).db(@database))
-      when @url
-        parser = Mongo::URIParser.new(@url)
-        parser.connection.db(parser.db_name)
-      end
+
+    def get_collection
+      @client = client
+      @client = authenticate(@client)
+      @client["#{@collection}"]
     end
-    
-    def database_name
-      case
-      when @database
-        @database
-      when @url
-        Mongo::URIParser.new(@url).db_name
-      end
-    end
-    
+
     def node_string
       case
       when @database
@@ -143,87 +147,67 @@ module Fluent
       end
     end
 
-    def process_document(doc)
-      time = if @time_key
-               t = doc.delete(@time_key)
-               t.nil? ? Engine.now : t.to_i
-             else
-               Engine.now
-             end
-      tag = if @tag_key
-              t = doc.delete(@tag_key)
-              t.nil? ? 'mongo.missing_tag' : t
-            else
-              @tag
-            end
-      if @object_id_keys
-        @object_id_keys.each { |id_key|
-          doc[id_key] = doc[id_key].to_s
+    def process_documents(documents)
+      es = MultiEventStream.new
+      documents.each {|doc|
+        time = if @time_key
+                 t = doc.delete(@time_key)
+                 t.nil? ? Engine.now : t.to_i
+               else
+                 Engine.now
+               end
+        tag = if @tag_key
+                t = doc.delete(@tag_key)
+                t.nil? ? 'mongo.missing_tag' : t
+              else
+                @tag
+              end
+        if @object_id_keys
+          @object_id_keys.each {|id_key|
+            doc[id_key] = doc[id_key].to_s
+          }
+        end
+
+        if id = doc.delete('_id')
+          @last_id = id.to_s
+          doc['_id_str'] = @last_id
+          save_last_id if @id_store_file
+        end
+        es.add(time, doc)
+      }
+      router.emit_stream(tag, es)
+    end
+
+    def get_last_inserted_id
+      last_inserted_id = nil
+      documents = @collection.find()
+      if documents.count >= 1
+        documents.each {|doc|
+          if id = doc.delete('_id')
+            last_inserted_id = id
+          end
         }
       end
-
-      if id = doc.delete('_id')
-        @last_id = id.to_s
-        doc['_id_str'] = @last_id
-        save_last_id(@last_id)
-      end
-
-      # Should use MultiEventStream?
-      router.emit(tag, time, doc)
+      last_inserted_id
     end
 
-    def cursor_conf
-      conf = {}
-      conf[:tailable] = true
-      conf[:selector] = {'_id' => {'$gt' => BSON::ObjectId(@last_id)}} if @last_id
-      conf
-    end
-
-    # following methods are used to read/write last_id
-    
-    def open_id_storage
-      if @id_store_file
-        @id_storage = File.open(@id_store_file, 'w')
-        @id_storege.sync
-      end
-      
-      if @id_store_collection
-        @id_storage = get_database.collection(@id_store_collection)
-      end
-    end
-    
-    def close_id_storage
-      if @id_storage.is_a?(File)
-        @id_storage.close
-      end
+    def get_id_store_file
+      file = File.open(@id_store_file, 'w')
+      file.sync
+      file
     end
 
     def get_last_id
-      begin
-        if @id_store_file && File.exist?(@id_store_file)
-          return BSON::ObjectId(File.read(@id_store_file)).to_s
-        end
-      
-        if @id_store_collection
-          collection = get_database.collection(@id_store_collection)
-          count = collection.find.count
-          doc = collection.find.skip(count - 1).limit(1).first
-          return doc && doc["last_id"]
-        end
-      rescue
+      if File.exist?(@id_store_file)
+        BSON::ObjectId(File.read(@id_store_file)).to_s rescue nil
+      else
         nil
       end
     end
 
-    def save_last_id(last_id)
-      if @id_storage.is_a?(File)
-        @id_storage.pos = 0
-        @id_storage.write(last_id)
-      end
-      
-      if @id_storage.is_a?(Mongo::Collection)
-        @id_storage.insert("last_id" => last_id)
-      end
+    def save_last_id
+      @file.pos = 0
+      @file.write(@last_id)
     end
   end
 end

@@ -10,12 +10,15 @@ gemfile:
  - Gemfile
  - Gemfile.v0.12
 
+services:
+  - mongodb
+
 before_install:
   - gem update bundler
 before_script:
   - git submodule update -i
 
-script: mongod=mongod bundle exec rake test
+script: bundle exec rake test
 
 matrix:
   allow_failures:
