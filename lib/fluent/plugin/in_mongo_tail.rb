@@ -1,8 +1,9 @@
-require 'fluent/input'
+# coding: utf-8
+require 'fluent/plugin/input'
 
-module Fluent
+module Fluent::Plugin
   class MongoTailInput < Input
-    Plugin.register_input('mongo_tail', self)
+    Fluent::Plugin.register_input('mongo_tail', self)
 
     unless method_defined?(:log)
       define_method(:log) { $log }
@@ -14,10 +15,10 @@ module Fluent
     end
 
     require 'fluent/plugin/mongo_auth'
-    include MongoAuthParams
-    include MongoAuth
+    include Fluent::MongoAuthParams
+    include Fluent::MongoAuth
     require 'fluent/plugin/logger_support'
-    include LoggerSupport
+    include Fluent::LoggerSupport
 
     desc "MongoDB database"
     config_param :database, :string, default: nil
@@ -61,15 +62,15 @@ module Fluent
       super
 
       if !@tag and !@tag_key
-        raise ConfigError, "'tag' or 'tag_key' option is required on mongo_tail input"
+        raise Fluent::ConfigError, "'tag' or 'tag_key' option is required on mongo_tail input"
       end
 
       if @database && @url
-        raise ConfigError, "Both 'database' and 'url' can not be set"
+        raise Fluent::ConfigError, "Both 'database' and 'url' can not be set"
       end
 
       if !@database && !@url
-        raise ConfigError, "One of 'database' or 'url' must be specified"
+        raise Fluent::ConfigError, "One of 'database' or 'url' must be specified"
       end
 
       @last_id = @id_store_file ? get_last_id : nil
@@ -148,13 +149,13 @@ module Fluent
     end
 
     def process_documents(documents)
-      es = MultiEventStream.new
+      es = Fluent::MultiEventStream.new
       documents.each {|doc|
         time = if @time_key
                  t = doc.delete(@time_key)
-                 t.nil? ? Engine.now : t.to_i
+                 t.nil? ? Fluent::Engine.now : t.to_i
                else
-                 Engine.now
+                 Fluent::Engine.now
                end
         tag = if @tag_key
                 t = doc.delete(@tag_key)

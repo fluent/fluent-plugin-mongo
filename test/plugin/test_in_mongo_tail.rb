@@ -1,4 +1,5 @@
 require "helper"
+require "fluent/test/driver/input"
 
 class MongoTailInputTest < Test::Unit::TestCase
   def setup
@@ -44,7 +45,7 @@ class MongoTailInputTest < Test::Unit::TestCase
   end
 
   def create_driver(conf=default_config)
-    Fluent::Test::InputTestDriver.new(Fluent::MongoTailInput).configure(conf)
+    Fluent::Test::Driver::Input.new(Fluent::Plugin::MongoTailInput).configure(conf)
   end
 
   def test_configure
