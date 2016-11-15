@@ -8,7 +8,6 @@ rvm:
 
 gemfile:
  - Gemfile
- - Gemfile.v0.12
 
 services:
   - mongodb
