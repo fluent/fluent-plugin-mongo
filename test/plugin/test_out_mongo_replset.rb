@@ -1,6 +1,7 @@
 require "helper"
 require "fluent/test/driver/output"
 require "fluent/test/helpers"
+require 'fluent/mixin' # for TimeFormatter
 
 class MongoReplsetOutputTest < ::Test::Unit::TestCase
   include Fluent::Test::Helpers
@@ -104,13 +105,18 @@ class MongoReplsetOutputTest < ::Test::Unit::TestCase
       d = create_driver
 
       time = event_time("2011-01-02 13:14:15 UTC")
+      time_format = false
+      localtime = true
+      timezone = true
+      formatter = Fluent::TimeFormatter.new(time_format, localtime, timezone)
+      formatted_time = formatter.call(time)
       d.run(default_tag: 'test') do
         d.feed(time, {'a' => 1})
         d.feed(time, {'a' => 2})
       end
-      assert_equal([time, {'a' => 1}].to_msgpack, d.formatted[0])
-      assert_equal([time, {'a' => 2}].to_msgpack, d.formatted[1])
-      assert_equal(2, documents.size)
+      assert_equal([time, {'a' => 1, d.instance.time_key => formatted_time}].to_msgpack, d.formatted[0])
+      assert_equal([time, {'a' => 2, d.instance.time_key => formatted_time}].to_msgpack, d.formatted[1])
+      assert_equal(2, d.formatted.size)
     end
 
     def test_write

@@ -4,7 +4,7 @@ module Fluent::Plugin
   class MongoOutput < Output
     Fluent::Plugin.register_output('mongo', self)
 
-    helpers :event_emitter
+    helpers :event_emitter, :inject, :compat_parameters
 
     unless method_defined?(:log)
       define_method(:log) { $log }
@@ -89,6 +89,7 @@ module Fluent::Plugin
           conf['buffer_chunk_limit'] = '8m'
         end
       end
+      compat_parameters_convert(conf, :inject)
 
       super
 
@@ -154,6 +155,7 @@ module Fluent::Plugin
     end
 
     def format(tag, time, record)
+      record = inject_values_to_record(tag, time, record)
       [time, record].to_msgpack
     end
 

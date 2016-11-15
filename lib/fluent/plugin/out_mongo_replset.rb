@@ -36,7 +36,7 @@ module Fluent::Plugin
     end
 
     def format(tag, time, record)
-      [time, record].to_msgpack
+      super
     end
 
     def write(chunk)
