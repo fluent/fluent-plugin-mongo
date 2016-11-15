@@ -1,23 +1,25 @@
-require 'fluent/output'
+require 'fluent/plugin/output'
 
-module Fluent
-  class MongoOutput < BufferedOutput
-    Plugin.register_output('mongo', self)
+module Fluent::Plugin
+  class MongoOutput < Output
+    Fluent::Plugin.register_output('mongo', self)
+
+    helpers :event_emitter
 
     unless method_defined?(:log)
       define_method(:log) { $log }
     end
 
     require 'fluent/plugin/mongo_auth'
-    include MongoAuthParams
-    include MongoAuth
+    include Fluent::MongoAuthParams
+    include Fluent::MongoAuth
     require 'fluent/plugin/logger_support'
-    include LoggerSupport
+    include Fluent::LoggerSupport
 
-    include SetTagKeyMixin
+    include Fluent::SetTagKeyMixin
     config_set_default :include_tag_key, false
 
-    include SetTimeKeyMixin
+    include Fluent::SetTimeKeyMixin
     config_set_default :include_time_key, true
 
     desc "MongoDB database"
@@ -69,10 +71,10 @@ module Fluent
 
     def configure(conf)
       if conf.has_key?('buffer_chunk_limit')
-        configured_chunk_limit_size = Config.size_value(conf['buffer_chunk_limit'])
+        configured_chunk_limit_size = Fluent::Config.size_value(conf['buffer_chunk_limit'])
         estimated_limit_size = LIMIT_AFTER_v1_8
         estimated_limit_size_conf = '8m'
-        if conf.has_key?('mongodb_smaller_bson_limit') && Config.bool_value(conf['mongodb_smaller_bson_limit'])
+        if conf.has_key?('mongodb_smaller_bson_limit') && Fluent::Config.bool_value(conf['mongodb_smaller_bson_limit'])
           estimated_limit_size = LIMIT_BEFORE_v1_8
           estimated_limit_size_conf = '2m'
         end
@@ -81,7 +83,7 @@ module Fluent
           conf['buffer_chunk_limit'] = estimated_limit_size_conf
         end
       else
-        if conf.has_key?('mongodb_smaller_bson_limit') && Config.bool_value(conf['mongodb_smaller_bson_limit'])
+        if conf.has_key?('mongodb_smaller_bson_limit') && Fluent::Config.bool_value(conf['mongodb_smaller_bson_limit'])
           conf['buffer_chunk_limit'] = '2m'
         else
           conf['buffer_chunk_limit'] = '8m'
@@ -97,13 +99,13 @@ module Fluent
       if conf.has_key?('tag_mapped')
         @tag_mapped = true
       end
-      raise ConfigError, "normal mode requires collection parameter" if !@tag_mapped and !conf.has_key?('collection')
+      raise Fluent::ConfigError, "normal mode requires collection parameter" if !@tag_mapped and !conf.has_key?('collection')
 
       if conf.has_key?('capped')
-        raise ConfigError, "'capped_size' parameter is required on <store> of Mongo output" unless conf.has_key?('capped_size')
+        raise Fluent::ConfigError, "'capped_size' parameter is required on <store> of Mongo output" unless conf.has_key?('capped_size')
         @collection_options[:capped] = true
-        @collection_options[:size] = Config.size_value(conf['capped_size'])
-        @collection_options[:max] = Config.size_value(conf['capped_max']) if conf.has_key?('capped_max')
+        @collection_options[:size] = Fluent::Config.size_value(conf['capped_size'])
+        @collection_options[:max] = Fluent::Config.size_value(conf['capped_max']) if conf.has_key?('capped_max')
       end
 
       if remove_tag_prefix = conf['remove_tag_prefix']
@@ -153,6 +155,10 @@ module Fluent
 
     def format(tag, time, record)
       [time, record].to_msgpack
+    end
+
+    def formatted_to_msgpack_binary
+      true
     end
 
     def write(chunk)

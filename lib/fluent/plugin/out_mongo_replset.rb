@@ -1,8 +1,8 @@
 require 'fluent/plugin/out_mongo'
 
-module Fluent
+module Fluent::Plugin
   class MongoOutputReplset < MongoOutput
-    Plugin.register_output('mongo_replset', self)
+    Fluent::Plugin.register_output('mongo_replset', self)
 
     unless method_defined?(:log)
       define_method(:log) { $log }
@@ -33,6 +33,14 @@ module Fluent
       end
 
       log.debug "Setup replica set configuration: #{conf['replica_set']}"
+    end
+
+    def format(tag, time, record)
+      [time, record].to_msgpack
+    end
+
+    def write(chunk)
+      super
     end
 
     private

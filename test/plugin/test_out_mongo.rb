@@ -1,7 +1,11 @@
 # coding: utf-8
 require "helper"
+require "fluent/test/driver/output"
+require "fluent/test/helpers"
 
 class MongoOutputTest < ::Test::Unit::TestCase
+  include Fluent::Test::Helpers
+
   def setup
     Fluent::Test.setup
     setup_mongod
@@ -42,8 +46,8 @@ class MongoOutputTest < ::Test::Unit::TestCase
     @client[collection_name].drop
   end
 
-  def create_driver(conf=default_config, tag='test')
-    Fluent::Test::BufferedOutputTestDriver.new(Fluent::MongoOutput, tag).configure(conf)
+  def create_driver(conf=default_config)
+    Fluent::Test::Driver::Output.new(Fluent::Plugin::MongoOutput).configure(conf)
   end
 
   def test_configure
@@ -136,31 +140,30 @@ class MongoOutputTest < ::Test::Unit::TestCase
   end
 
   def emit_documents(d)
-    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-    d.emit({'a' => 1}, time)
-    d.emit({'a' => 2}, time)
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.feed(time, {'a' => 1})
+    d.feed(time, {'a' => 2})
     time
   end
 
   def test_format
     d = create_driver
 
-    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-    d.emit({'a' => 1}, time)
-    d.emit({'a' => 2}, time)
-    d.expect_format([time, {'a' => 1, d.instance.time_key => time}].to_msgpack)
-    d.expect_format([time, {'a' => 2, d.instance.time_key => time}].to_msgpack)
-    d.run
-
-    documents = get_documents
-    assert_equal(2, documents.size)
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.run(default_tag: 'test') do
+      d.feed(time, {'a' => 1})
+      d.feed(time, {'a' => 2})
+    end
+    assert_equal([time, {'a' => 1}].to_msgpack, d.formatted[0])
+    assert_equal([time, {'a' => 2}].to_msgpack, d.formatted[1])
+    assert_equal(2, d.formatted.size)
   end
 
   def test_write
     d = create_driver
-    t = emit_documents(d)
-
-    d.run
+    d.run(default_tag: 'test') do
+      emit_documents(d)
+    end
     actual_documents = get_documents
     time = Time.parse("2011-01-02 13:14:15 UTC")
     expected = [{'a' => 1, d.instance.time_key => time},
@@ -173,9 +176,9 @@ class MongoOutputTest < ::Test::Unit::TestCase
       include_tag_key true
       include_time_key false
     ])
-    t = emit_documents(d)
-
-    d.run
+    d.run(default_tag: 'test') do
+      emit_documents(d)
+    end
     actual_documents = get_documents
     expected = [{'a' => 1, d.instance.tag_key => 'test'},
                 {'a' => 2, d.instance.tag_key => 'test'}]
@@ -183,9 +186,9 @@ class MongoOutputTest < ::Test::Unit::TestCase
   end
 
   def emit_invalid_documents(d)
-    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-    d.emit({'a' => 3, 'b' => "c", '$last' => '石動'}, time)
-    d.emit({'a' => 4, 'b' => "d", 'first' => '菖蒲'.encode('EUC-JP').force_encoding('UTF-8')}, time)
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.feed(time, {'a' => 3, 'b' => "c", '$last' => '石動'})
+    d.feed(time, {'a' => 4, 'b' => "d", 'first' => '菖蒲'.encode('EUC-JP').force_encoding('UTF-8')})
     time
   end
 
@@ -195,19 +198,20 @@ class MongoOutputTest < ::Test::Unit::TestCase
       replace_dollar_in_key_with _dollar_
     ])
 
-    original_time = "2016-02-01 13:14:15 UTC"
-    time = Time.parse(original_time).to_i
-    d.emit({
-      "foo.bar1" => {
-        "$foo$bar" => "baz"
-      },
-      "foo.bar2" => [
-        {
-          "$foo$bar" => "baz"
-        }
-      ],
-    }, time)
-    d.run
+    original_time = "2011-01-02 13:14:15 UTC"
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.run(default_tag: 'test') do
+      d.feed(time, {
+        "foo.bar1" => {
+           "$foo$bar" => "baz"
+        },
+        "foo.bar2" => [
+          {
+            "$foo$bar" => "baz"
+          }
+        ],
+             })
+    end
 
     documents = get_documents
     expected = {"foo_dot_bar1" => {
@@ -242,9 +246,9 @@ class MongoOutputTest < ::Test::Unit::TestCase
         user fluent
         password password
       ])
-      t = emit_documents(d)
-
-      d.run
+      d.run(default_tag: 'test') do
+        emit_documents(d)
+      end
       actual_documents = get_documents
       time = Time.parse("2011-01-02 13:14:15 UTC")
       expected = [{'a' => 1, d.instance.time_key => time},
