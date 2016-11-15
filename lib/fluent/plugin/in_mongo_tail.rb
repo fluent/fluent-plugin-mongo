@@ -5,15 +5,6 @@ module Fluent::Plugin
   class MongoTailInput < Input
     Fluent::Plugin.register_input('mongo_tail', self)
 
-    unless method_defined?(:log)
-      define_method(:log) { $log }
-    end
-
-    # Define `router` method of v0.12 to support v0.10 or earlier
-    unless method_defined?(:router)
-      define_method("router") { ::Fluent::Engine }
-    end
-
     require 'fluent/plugin/mongo_auth'
     include Fluent::MongoAuthParams
     include Fluent::MongoAuth

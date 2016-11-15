@@ -4,10 +4,6 @@ module Fluent::Plugin
   class MongoOutputReplset < MongoOutput
     Fluent::Plugin.register_output('mongo_replset', self)
 
-    unless method_defined?(:log)
-      define_method(:log) { $log }
-    end
-
     config_set_default :include_tag_key, false
     config_set_default :include_time_key, true
 
@@ -17,10 +13,6 @@ module Fluent::Plugin
     config_param :read, :string, :default => nil
     desc "Retry number"
     config_param :num_retries, :integer, :default => 60
-
-    unless method_defined?(:log)
-      define_method(:log) { $log }
-    end
 
     def configure(conf)
       super

@@ -6,10 +6,6 @@ module Fluent::Plugin
 
     helpers :event_emitter, :inject, :compat_parameters
 
-    unless method_defined?(:log)
-      define_method(:log) { $log }
-    end
-
     require 'fluent/plugin/mongo_auth'
     include Fluent::MongoAuthParams
     include Fluent::MongoAuth
