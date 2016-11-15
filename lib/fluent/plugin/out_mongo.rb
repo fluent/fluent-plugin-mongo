@@ -176,7 +176,6 @@ module Fluent::Plugin
     def collect_records(chunk)
       records = []
       chunk.msgpack_each {|time, record|
-        record[@time_key] = Time.at(time || record[@time_key]) if @include_time_key
         records << record
       }
       records
