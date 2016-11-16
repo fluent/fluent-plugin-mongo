@@ -95,7 +95,7 @@ class MongoReplsetOutputTest < ::Test::Unit::TestCase
     end
 
     def emit_documents(d)
-      time = Time.parse("2011-01-02 13:14:15 UTC").to_i
+      time = event_time("2011-01-02 13:14:15 UTC")
       d.feed(time, {'a' => 1})
       d.feed(time, {'a' => 2})
       time
@@ -105,11 +105,7 @@ class MongoReplsetOutputTest < ::Test::Unit::TestCase
       d = create_driver
 
       time = event_time("2011-01-02 13:14:15 UTC")
-      time_format = false
-      localtime = true
-      timezone = true
-      formatter = Fluent::TimeFormatter.new(time_format, localtime, timezone)
-      formatted_time = formatter.call(time)
+      formatted_time = time_formatter(time)
       d.run(default_tag: 'test') do
         d.feed(time, {'a' => 1})
         d.feed(time, {'a' => 2})
@@ -125,9 +121,10 @@ class MongoReplsetOutputTest < ::Test::Unit::TestCase
         emit_documents(d)
       end
       actual_documents = get_documents
-      time = Time.parse("2011-01-02 13:14:15 UTC")
-      expected = [{'a' => 1, d.instance.time_key => time},
-                  {'a' => 2, d.instance.time_key => time}]
+      time = event_time("2011-01-02 13:14:15 UTC")
+      formatted_time = time_formatter(time)
+      expected = [{'a' => 1, d.instance.time_key => formatted_time},
+                  {'a' => 2, d.instance.time_key => formatted_time}]
       assert_equal(expected, actual_documents)
     end
   end

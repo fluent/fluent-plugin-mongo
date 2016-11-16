@@ -151,11 +151,7 @@ class MongoOutputTest < ::Test::Unit::TestCase
     d = create_driver
 
     time = event_time("2011-01-02 13:14:15 UTC")
-    time_format = false
-    localtime = true
-    timezone = true
-    formatter = Fluent::TimeFormatter.new(time_format, localtime, timezone)
-    formatted_time = formatter.call(time)
+    formatted_time = time_formatter(time)
     d.run(default_tag: 'test') do
       d.feed(time, {'a' => 1})
       d.feed(time, {'a' => 2})
@@ -171,9 +167,10 @@ class MongoOutputTest < ::Test::Unit::TestCase
       emit_documents(d)
     end
     actual_documents = get_documents
-    time = Time.parse("2011-01-02 13:14:15 UTC")
-    expected = [{'a' => 1, d.instance.time_key => time},
-                {'a' => 2, d.instance.time_key => time}]
+    time = event_time("2011-01-02 13:14:15 UTC")
+    formatted_time = time_formatter(time)
+    expected = [{'a' => 1, d.instance.time_key => formatted_time},
+                {'a' => 2, d.instance.time_key => formatted_time}]
     assert_equal(expected, actual_documents)
   end
 
@@ -204,8 +201,8 @@ class MongoOutputTest < ::Test::Unit::TestCase
       replace_dollar_in_key_with _dollar_
     ])
 
-    original_time = "2011-01-02 13:14:15 UTC"
     time = event_time("2011-01-02 13:14:15 UTC")
+    formatted_time = time_formatter(time)
     d.run(default_tag: 'test') do
       d.feed(time, {
         "foo.bar1" => {
@@ -227,7 +224,7 @@ class MongoOutputTest < ::Test::Unit::TestCase
                   {
                     "_dollar_foo$bar"=>"baz"
                   },
-                ], "time" => Time.parse(original_time)
+                ], "time" => formatted_time
                }
     assert_equal(1, documents.size)
     assert_equal(expected, documents[0])
@@ -256,9 +253,10 @@ class MongoOutputTest < ::Test::Unit::TestCase
         emit_documents(d)
       end
       actual_documents = get_documents
-      time = Time.parse("2011-01-02 13:14:15 UTC")
-      expected = [{'a' => 1, d.instance.time_key => time},
-                  {'a' => 2, d.instance.time_key => time}]
+      time = event_time("2011-01-02 13:14:15 UTC")
+      formatted_time = time_formatter(time)
+      expected = [{'a' => 1, d.instance.time_key => formatted_time},
+                  {'a' => 2, d.instance.time_key => formatted_time}]
       assert_equal(expected, actual_documents)
     end
   end
