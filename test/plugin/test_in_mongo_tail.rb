@@ -92,7 +92,6 @@ class MongoTailInputTest < Test::Unit::TestCase
         database #{database_name}
         collection #{collection_name}
         tag input.mongo
-        tag_key tag
         time_key time
       ])
       d.run(expect_records: 1, timeout: 5) do
@@ -104,13 +103,30 @@ class MongoTailInputTest < Test::Unit::TestCase
       assert_equal "test", events[0][2]["message"]
     end
 
+    def test_emit_with_tag_time_keys
+      d = create_driver(%[
+        @type mongo_tail
+        database #{database_name}
+        collection #{collection_name}
+        tag input.mongo
+        tag_key tag
+        time_key time
+      ])
+      d.run(expect_records: 1, timeout: 5) do
+        @client[collection_name].insert_one({message: "test", tag: "user.defined", time: Fluent::Engine.now})
+      end
+      events = d.events
+      assert_equal "user.defined", events[0][0]
+      assert_equal event_time(@time.to_s), events[0][1]
+      assert_equal "test", events[0][2]["message"]
+    end
+
     def test_emit_after_last_id
       d = create_driver(%[
         @type mongo_tail
         database #{database_name}
         collection #{collection_name}
         tag input.mongo.last_id
-        tag_key tag
         time_key time
       ])
       @client[collection_name].insert_one({message: "can't obtain"})

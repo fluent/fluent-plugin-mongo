@@ -140,7 +140,7 @@ module Fluent::Plugin
                else
                  Fluent::Engine.now
                end
-        tag = if @tag_key
+        @tag = if @tag_key
                 t = doc.delete(@tag_key)
                 t.nil? ? 'mongo.missing_tag' : t
               else
@@ -159,7 +159,7 @@ module Fluent::Plugin
         end
         es.add(time, doc)
       }
-      router.emit_stream(tag, es)
+      router.emit_stream(@tag, es)
     end
 
     def get_last_inserted_id
