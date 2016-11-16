@@ -12,10 +12,7 @@ module Fluent::Plugin
     require 'fluent/plugin/logger_support'
     include Fluent::LoggerSupport
 
-    include Fluent::SetTagKeyMixin
     config_set_default :include_tag_key, false
-
-    include Fluent::SetTimeKeyMixin
     config_set_default :include_time_key, true
 
     desc "MongoDB database"

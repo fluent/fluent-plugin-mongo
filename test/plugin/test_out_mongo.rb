@@ -156,8 +156,8 @@ class MongoOutputTest < ::Test::Unit::TestCase
       d.feed(time, {'a' => 1})
       d.feed(time, {'a' => 2})
     end
-    assert_equal([time, {'a' => 1, d.instance.time_key => formatted_time}].to_msgpack, d.formatted[0])
-    assert_equal([time, {'a' => 2, d.instance.time_key => formatted_time}].to_msgpack, d.formatted[1])
+    assert_equal([time, {'a' => 1, d.instance.inject_config.time_key => formatted_time}].to_msgpack, d.formatted[0])
+    assert_equal([time, {'a' => 2, d.instance.inject_config.time_key => formatted_time}].to_msgpack, d.formatted[1])
     assert_equal(2, d.formatted.size)
   end
 
@@ -169,8 +169,8 @@ class MongoOutputTest < ::Test::Unit::TestCase
     actual_documents = get_documents
     time = event_time("2011-01-02 13:14:15 UTC")
     formatted_time = time_formatter(time)
-    expected = [{'a' => 1, d.instance.time_key => formatted_time},
-                {'a' => 2, d.instance.time_key => formatted_time}]
+    expected = [{'a' => 1, d.instance.inject_config.time_key => formatted_time},
+                {'a' => 2, d.instance.inject_config.time_key => formatted_time}]
     assert_equal(expected, actual_documents)
   end
 
@@ -183,8 +183,8 @@ class MongoOutputTest < ::Test::Unit::TestCase
       emit_documents(d)
     end
     actual_documents = get_documents
-    expected = [{'a' => 1, d.instance.tag_key => 'test'},
-                {'a' => 2, d.instance.tag_key => 'test'}]
+    expected = [{'a' => 1, d.instance.inject_config.tag_key => 'test'},
+                {'a' => 2, d.instance.inject_config.tag_key => 'test'}]
     assert_equal(expected, actual_documents)
   end
 
@@ -255,8 +255,8 @@ class MongoOutputTest < ::Test::Unit::TestCase
       actual_documents = get_documents
       time = event_time("2011-01-02 13:14:15 UTC")
       formatted_time = time_formatter(time)
-      expected = [{'a' => 1, d.instance.time_key => formatted_time},
-                  {'a' => 2, d.instance.time_key => formatted_time}]
+      expected = [{'a' => 1, d.instance.inject_config.time_key => formatted_time},
+                  {'a' => 2, d.instance.inject_config.time_key => formatted_time}]
       assert_equal(expected, actual_documents)
     end
   end
