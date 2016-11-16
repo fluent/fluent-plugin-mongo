@@ -9,6 +9,8 @@ module Fluent::Plugin
   class MongoTailInput < Input
     Fluent::Plugin.register_input('mongo_tail', self)
 
+    helpers :timer
+
     include Fluent::MongoAuthParams
     include Fluent::MongoAuth
     include Fluent::LoggerSupport
@@ -78,7 +80,7 @@ module Fluent::Plugin
       # Resume tailing from last inserted id.
       # Because tailable option is obsoleted since mongo driver 2.0.
       @last_id = get_last_inserted_id if !@id_store_file and get_last_inserted_id
-      @thread = Thread.new(&method(:run))
+      timer_execute(:in_mongo_tail_watcher, @wait_time, &method(:run))
     end
 
     def shutdown
@@ -87,32 +89,22 @@ module Fluent::Plugin
         @file.close
       end
 
-      @stop = true
-      @thread.join
       @client.close
 
       super
     end
 
     def run
-      loop {
-        option = {}
-        begin
-          loop {
-            return if @stop
-
-            option['_id'] = {'$gt' => BSON::ObjectId(@last_id)} if @last_id
-            documents = @collection.find(option)
-            if documents.count >= 1
-              process_documents(documents)
-            else
-              sleep @wait_time
-            end
-          }
-        rescue
-          # ignore Exceptions
+      option = {}
+      begin
+        option['_id'] = {'$gt' => BSON::ObjectId(@last_id)} if @last_id
+        documents = @collection.find(option)
+        if documents.count >= 1
+          process_documents(documents)
         end
-      }
+      rescue
+        # ignore Exceptions
+      end
     end
 
     private
