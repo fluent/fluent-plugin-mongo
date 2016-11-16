@@ -1,14 +1,16 @@
 # coding: utf-8
+require 'mongo'
+require 'bson'
 require 'fluent/plugin/input'
+require 'fluent/plugin/mongo_auth'
+require 'fluent/plugin/logger_support'
 
 module Fluent::Plugin
   class MongoTailInput < Input
     Fluent::Plugin.register_input('mongo_tail', self)
 
-    require 'fluent/plugin/mongo_auth'
     include Fluent::MongoAuthParams
     include Fluent::MongoAuth
-    require 'fluent/plugin/logger_support'
     include Fluent::LoggerSupport
 
     desc "MongoDB database"
@@ -42,8 +44,6 @@ module Fluent::Plugin
 
     def initialize
       super
-      require 'mongo'
-      require 'bson'
 
       @client_options = {}
       @connection_options = {}

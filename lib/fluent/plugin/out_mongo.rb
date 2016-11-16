@@ -1,4 +1,8 @@
+require 'mongo'
+require 'msgpack'
 require 'fluent/plugin/output'
+require 'fluent/plugin/mongo_auth'
+require 'fluent/plugin/logger_support'
 
 module Fluent::Plugin
   class MongoOutput < Output
@@ -6,10 +10,8 @@ module Fluent::Plugin
 
     helpers :event_emitter, :inject, :compat_parameters
 
-    require 'fluent/plugin/mongo_auth'
     include Fluent::MongoAuthParams
     include Fluent::MongoAuth
-    require 'fluent/plugin/logger_support'
     include Fluent::LoggerSupport
 
     config_set_default :include_tag_key, false
@@ -50,9 +52,6 @@ module Fluent::Plugin
 
     def initialize
       super
-
-      require 'mongo'
-      require 'msgpack'
 
       @client_options = {}
       @collection_options = {capped: false}
