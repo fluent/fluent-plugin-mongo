@@ -1,5 +1,7 @@
 require "helper"
 require "fluent/test/driver/input"
+require "fluent/test/helpers"
+require "timecop"
 
 class MongoTailInputTest < Test::Unit::TestCase
   def setup
@@ -66,6 +68,62 @@ class MongoTailInputTest < Test::Unit::TestCase
 
     expected = "error"
     assert_equal(expected, d.instance.mongo_log_level)
+  end
+
+  class TailInputTest < self
+    include Fluent::Test::Helpers
+
+    def setup_mongod
+      options = {}
+      options[:database] = database_name
+      @client = ::Mongo::Client.new(["localhost:#{port}"], options)
+      @time = Time.now
+      Timecop.freeze(@time)
+    end
+
+    def teardown_mongod
+      @client[collection_name].drop
+      Timecop.return
+    end
+
+    def test_emit
+      d = create_driver(%[
+        @type mongo_tail
+        database #{database_name}
+        collection #{collection_name}
+        tag input.mongo
+        tag_key tag
+        time_key time
+      ])
+      d.run(expect_records: 1, timeout: 5) do
+        @client[collection_name].insert_one({message: "test"})
+      end
+      events = d.events
+      assert_equal "input.mongo", events[0][0]
+      assert_equal event_time(@time.to_s), events[0][1]
+      assert_equal "test", events[0][2]["message"]
+    end
+
+    def test_emit_after_last_id
+      d = create_driver(%[
+        @type mongo_tail
+        database #{database_name}
+        collection #{collection_name}
+        tag input.mongo.last_id
+        tag_key tag
+        time_key time
+      ])
+      @client[collection_name].insert_one({message: "can't obtain"})
+
+      d.run(expect_records: 1, timeout: 5) do
+        @client[collection_name].insert_one({message: "can obtain"})
+      end
+      events = d.events
+      assert_equal 1, events.size
+      assert_equal "input.mongo.last_id", events[0][0]
+      assert_equal event_time(@time.to_s), events[0][1]
+      assert_equal "can obtain", events[0][2]["message"]
+    end
   end
 
   class MongoAuthenticateTest < self
