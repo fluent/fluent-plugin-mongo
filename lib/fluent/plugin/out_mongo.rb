@@ -162,6 +162,10 @@ module Fluent::Plugin
       true
     end
 
+    def multi_workers_ready?
+      true
+    end
+
     def write(chunk)
       collection_name = extract_placeholders(@collection, chunk.metadata)
       operate(format_collection_name(collection_name), collect_records(chunk))
