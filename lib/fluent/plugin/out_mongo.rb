@@ -97,7 +97,8 @@ module Fluent::Plugin
       end
 
       if conf.has_key?('tag_mapped')
-        @tag_mapped = true
+        log.warn "'tag_mapped' feature is replaced with built-in config placeholder. Please consider to use 'collection ${tag}'."
+        @collection = '${tag}'
       end
       raise Fluent::ConfigError, "normal mode requires collection parameter" if !@tag_mapped and !conf.has_key?('collection')
 
@@ -162,7 +163,7 @@ module Fluent::Plugin
     end
 
     def write(chunk)
-      collection_name = @tag_mapped ? chunk.key : @collection
+      collection_name = extract_placeholders(@collection, chunk.metadata)
       operate(format_collection_name(collection_name), collect_records(chunk))
     end
 

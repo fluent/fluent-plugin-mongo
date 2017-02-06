@@ -43,8 +43,8 @@ class MongoOutputTest < ::Test::Unit::TestCase
     @client = ::Mongo::Client.new(["localhost:#{port}"], options)
   end
 
-  def teardown_mongod
-    @client[collection_name].drop
+  def teardown_mongod(collection = collection_name)
+    @client[collection].drop
   end
 
   def create_driver(conf=default_config)
@@ -96,6 +96,7 @@ class MongoOutputTest < ::Test::Unit::TestCase
     d = create_driver(conf)
     assert_true(d.instance.tag_mapped)
     assert_equal(/^raw\./, d.instance.remove_tag_prefix)
+    assert_equal('${tag}', d.instance.collection)
   end
 
   def test_configure_with_write_concern
@@ -136,8 +137,8 @@ class MongoOutputTest < ::Test::Unit::TestCase
     assert_equal(expected, d.instance.mongo_log_level)
   end
 
-  def get_documents
-    @client[collection_name].find.to_a.map {|e| e.delete('_id'); e}
+  def get_documents(collection = collection_name)
+    @client[collection].find.to_a.map {|e| e.delete('_id'); e}
   end
 
   def emit_documents(d)
@@ -172,6 +173,35 @@ class MongoOutputTest < ::Test::Unit::TestCase
     expected = [{'a' => 1, d.instance.inject_config.time_key => formatted_time},
                 {'a' => 2, d.instance.inject_config.time_key => formatted_time}]
     assert_equal(expected, actual_documents)
+  end
+
+  class WriteWithCollectionPlaceholder < self
+    def setup
+      @tag = 'custom'
+      setup_mongod
+    end
+
+    def teardown
+      teardown_mongod(@tag)
+    end
+
+    def test_write_with_collection_placeholder
+      d = create_driver(%[
+      type mongo
+      database #{database_name}
+      collection ${tag}
+      include_time_key true
+    ])
+      d.run(default_tag: @tag) do
+        emit_documents(d)
+      end
+      actual_documents = get_documents(@tag)
+      time = event_time("2011-01-02 13:14:15 UTC")
+      formatted_time = time_formatter(time)
+      expected = [{'a' => 1, d.instance.inject_config.time_key => formatted_time},
+                  {'a' => 2, d.instance.inject_config.time_key => formatted_time}]
+      assert_equal(expected, actual_documents)
+    end
   end
 
   def test_write_at_enable_tag
