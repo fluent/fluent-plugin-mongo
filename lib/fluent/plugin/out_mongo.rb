@@ -14,6 +14,8 @@ module Fluent::Plugin
     include Fluent::MongoAuth
     include Fluent::LoggerSupport
 
+    DEFAULT_BUFFER_TYPE = "memory"
+
     config_set_default :include_tag_key, false
     config_set_default :include_time_key, true
 
@@ -47,6 +49,11 @@ module Fluent::Plugin
     config_param :ssl_key_pass_phrase, :string, default: nil, secret: true
     config_param :ssl_verify, :bool, default: false
     config_param :ssl_ca_cert, :string, default: nil
+
+    config_section :buffer do
+      config_set_default :@type, DEFAULT_BUFFER_TYPE
+      config_set_default :chunk_keys, ['tag']
+    end
 
     attr_reader :client_options, :collection_options
 
