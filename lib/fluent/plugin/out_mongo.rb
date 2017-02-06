@@ -147,8 +147,7 @@ module Fluent::Plugin
     end
 
     def format(tag, time, record)
-      record = inject_values_to_record(tag, time, record)
-      [time, record].to_msgpack
+      [tag, time, record].to_msgpack
     end
 
     def formatted_to_msgpack_binary
@@ -171,7 +170,8 @@ module Fluent::Plugin
 
     def collect_records(chunk)
       records = []
-      chunk.msgpack_each {|time, record|
+      chunk.msgpack_each {|tag, time, record|
+        record = inject_values_to_record(tag, time, record)
         records << record
       }
       records
