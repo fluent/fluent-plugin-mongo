@@ -4,10 +4,10 @@ fluent-plugin-mongo provides input and output plugins for {Fluentd}[http://fluen
 
 = Requirements
 
-|fluent-plugin-mongo|   fluentd  |  ruby  |
-|-------------------|------------|--------|
-|     >= 1.0.0      | >= 0.14.12 | >= 2.1 |
-|     <  1.0.0      | ~> 0.12.0  | >= 1.9 |
+    |fluent-plugin-mongo|   fluentd  |  ruby  |
+    |-------------------|------------|--------|
+    |     >= 1.0.0      | >= 0.14.12 | >= 2.1 |
+    |     <  1.0.0      | ~> 0.12.0  | >= 1.9 |
 
 = Installation
 
