@@ -152,7 +152,6 @@ class MongoOutputTest < ::Test::Unit::TestCase
     d = create_driver
 
     time = event_time("2011-01-02 13:14:15 UTC")
-    formatted_time = time_formatter(time)
     d.run(default_tag: 'test') do
       d.feed(time, {'a' => 1})
       d.feed(time, {'a' => 2})
@@ -169,9 +168,8 @@ class MongoOutputTest < ::Test::Unit::TestCase
     end
     actual_documents = get_documents
     time = event_time("2011-01-02 13:14:15 UTC")
-    formatted_time = time_formatter(time)
-    expected = [{'a' => 1, d.instance.inject_config.time_key => formatted_time},
-                {'a' => 2, d.instance.inject_config.time_key => formatted_time}]
+    expected = [{'a' => 1, d.instance.inject_config.time_key => Time.at(time).localtime},
+                {'a' => 2, d.instance.inject_config.time_key => Time.at(time).localtime}]
     assert_equal(expected, actual_documents)
   end
 
@@ -197,9 +195,8 @@ class MongoOutputTest < ::Test::Unit::TestCase
       end
       actual_documents = get_documents(@tag)
       time = event_time("2011-01-02 13:14:15 UTC")
-      formatted_time = time_formatter(time)
-      expected = [{'a' => 1, d.instance.inject_config.time_key => formatted_time},
-                  {'a' => 2, d.instance.inject_config.time_key => formatted_time}]
+      expected = [{'a' => 1, d.instance.inject_config.time_key => Time.at(time).localtime},
+                  {'a' => 2, d.instance.inject_config.time_key => Time.at(time).localtime}]
       assert_equal(expected, actual_documents)
     end
   end
@@ -232,7 +229,6 @@ class MongoOutputTest < ::Test::Unit::TestCase
     ])
 
     time = event_time("2011-01-02 13:14:15 UTC")
-    formatted_time = time_formatter(time)
     d.run(default_tag: 'test') do
       d.feed(time, {
         "foo.bar1" => {
@@ -254,7 +250,7 @@ class MongoOutputTest < ::Test::Unit::TestCase
                   {
                     "_dollar_foo$bar"=>"baz"
                   },
-                ], "time" => formatted_time
+                ], "time" => Time.at(time).localtime
                }
     assert_equal(1, documents.size)
     assert_equal(expected, documents[0])
@@ -284,9 +280,8 @@ class MongoOutputTest < ::Test::Unit::TestCase
       end
       actual_documents = get_documents
       time = event_time("2011-01-02 13:14:15 UTC")
-      formatted_time = time_formatter(time)
-      expected = [{'a' => 1, d.instance.inject_config.time_key => formatted_time},
-                  {'a' => 2, d.instance.inject_config.time_key => formatted_time}]
+      expected = [{'a' => 1, d.instance.inject_config.time_key => Time.at(time).localtime},
+                  {'a' => 2, d.instance.inject_config.time_key => Time.at(time).localtime}]
       assert_equal(expected, actual_documents)
     end
   end

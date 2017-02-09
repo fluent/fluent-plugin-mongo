@@ -125,11 +125,6 @@ module Fluent::Plugin
         @client_options[:ssl_ca_cert] = @ssl_ca_cert
       end
 
-      # MongoDB uses BSON's Date for time.
-      def @timef.format_nocache(time)
-        time
-      end
-
       configure_logger(@mongo_log_level)
 
       log.debug "Setup mongo configuration: mode = #{@tag_mapped ? 'tag mapped' : 'normal'}"
@@ -182,8 +177,11 @@ module Fluent::Plugin
 
     def collect_records(chunk)
       records = []
+      time_key = @inject_config.time_key
       chunk.msgpack_each {|tag, time, record|
         record = inject_values_to_record(tag, time, record)
+        # MongoDB uses BSON's Date for time.
+        record[time_key] = Time.at(time || record[time_key]) if time_key
         records << record
       }
       records
