@@ -150,7 +150,7 @@ module Fluent::Plugin
     end
 
     def format(tag, time, record)
-      [tag, time, record].to_msgpack
+      [time, record].to_msgpack
     end
 
     def formatted_to_msgpack_binary
@@ -178,7 +178,8 @@ module Fluent::Plugin
     def collect_records(chunk)
       records = []
       time_key = @inject_config.time_key
-      chunk.msgpack_each {|tag, time, record|
+      tag = chunk.metadata.tag
+      chunk.msgpack_each {|time, record|
         record = inject_values_to_record(tag, time, record)
         # MongoDB uses BSON's Date for time.
         record[time_key] = Time.at(time || record[time_key]) if time_key

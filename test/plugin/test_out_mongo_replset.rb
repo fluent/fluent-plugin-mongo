@@ -109,8 +109,8 @@ class MongoReplsetOutputTest < ::Test::Unit::TestCase
         d.feed(time, {'a' => 1})
         d.feed(time, {'a' => 2})
       end
-      assert_equal(['test', time, {'a' => 1}].to_msgpack, d.formatted[0])
-      assert_equal(['test', time, {'a' => 2}].to_msgpack, d.formatted[1])
+      assert_equal([time, {'a' => 1}].to_msgpack, d.formatted[0])
+      assert_equal([time, {'a' => 2}].to_msgpack, d.formatted[1])
       assert_equal(2, d.formatted.size)
     end
 
