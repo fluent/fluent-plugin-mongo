@@ -1,6 +1,11 @@
 require "helper"
+require "fluent/test/driver/output"
+require "fluent/test/helpers"
+require 'fluent/mixin' # for TimeFormatter
 
 class MongoReplsetOutputTest < ::Test::Unit::TestCase
+  include Fluent::Test::Helpers
+
   def setup
     Fluent::Test.setup
   end
@@ -31,8 +36,8 @@ class MongoReplsetOutputTest < ::Test::Unit::TestCase
     ]
   end
 
-  def create_driver(conf=default_config, tag='test')
-    Fluent::Test::BufferedOutputTestDriver.new(Fluent::MongoOutputReplset, tag).configure(conf)
+  def create_driver(conf=default_config)
+    Fluent::Test::Driver::Output.new(Fluent::Plugin::MongoOutputReplset).configure(conf)
   end
 
   def test_configure
@@ -90,35 +95,34 @@ class MongoReplsetOutputTest < ::Test::Unit::TestCase
     end
 
     def emit_documents(d)
-      time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-      d.emit({'a' => 1}, time)
-      d.emit({'a' => 2}, time)
+      time = event_time("2011-01-02 13:14:15 UTC")
+      d.feed(time, {'a' => 1})
+      d.feed(time, {'a' => 2})
       time
     end
 
     def test_format
       d = create_driver
 
-      time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-      d.emit({'a' => 1}, time)
-      d.emit({'a' => 2}, time)
-      d.expect_format([time, {'a' => 1, d.instance.time_key => time}].to_msgpack)
-      d.expect_format([time, {'a' => 2, d.instance.time_key => time}].to_msgpack)
-      d.run
-
-      documents = get_documents
-      assert_equal(2, documents.size)
+      time = event_time("2011-01-02 13:14:15 UTC")
+      d.run(default_tag: 'test') do
+        d.feed(time, {'a' => 1})
+        d.feed(time, {'a' => 2})
+      end
+      assert_equal([time, {'a' => 1}].to_msgpack, d.formatted[0])
+      assert_equal([time, {'a' => 2}].to_msgpack, d.formatted[1])
+      assert_equal(2, d.formatted.size)
     end
 
     def test_write
       d = create_driver
-      t = emit_documents(d)
-
-      d.run
+      d.run(default_tag: 'test') do
+        emit_documents(d)
+      end
       actual_documents = get_documents
-      time = Time.parse("2011-01-02 13:14:15 UTC")
-      expected = [{'a' => 1, d.instance.time_key => time},
-                  {'a' => 2, d.instance.time_key => time}]
+      time = event_time("2011-01-02 13:14:15 UTC")
+      expected = [{'a' => 1, d.instance.inject_config.time_key => Time.at(time).localtime},
+                  {'a' => 2, d.instance.inject_config.time_key => Time.at(time).localtime}]
       assert_equal(expected, actual_documents)
     end
   end

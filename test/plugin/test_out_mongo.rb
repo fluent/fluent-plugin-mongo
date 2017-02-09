@@ -1,7 +1,11 @@
 # coding: utf-8
 require "helper"
+require "fluent/test/driver/output"
+require "fluent/test/helpers"
 
 class MongoOutputTest < ::Test::Unit::TestCase
+  include Fluent::Test::Helpers
+
   def setup
     Fluent::Test.setup
     setup_mongod
@@ -38,12 +42,12 @@ class MongoOutputTest < ::Test::Unit::TestCase
     @client = ::Mongo::Client.new(["localhost:#{port}"], options)
   end
 
-  def teardown_mongod
-    @client[collection_name].drop
+  def teardown_mongod(collection = collection_name)
+    @client[collection].drop
   end
 
-  def create_driver(conf=default_config, tag='test')
-    Fluent::Test::BufferedOutputTestDriver.new(Fluent::MongoOutput, tag).configure(conf)
+  def create_driver(conf=default_config)
+    Fluent::Test::Driver::Output.new(Fluent::Plugin::MongoOutput).configure(conf)
   end
 
   def test_configure
@@ -91,6 +95,7 @@ class MongoOutputTest < ::Test::Unit::TestCase
     d = create_driver(conf)
     assert_true(d.instance.tag_mapped)
     assert_equal(/^raw\./, d.instance.remove_tag_prefix)
+    assert_equal('${tag}', d.instance.collection)
   end
 
   def test_configure_with_write_concern
@@ -131,41 +136,68 @@ class MongoOutputTest < ::Test::Unit::TestCase
     assert_equal(expected, d.instance.mongo_log_level)
   end
 
-  def get_documents
-    @client[collection_name].find.to_a.map {|e| e.delete('_id'); e}
+  def get_documents(collection = collection_name)
+    @client[collection].find.to_a.map {|e| e.delete('_id'); e}
   end
 
   def emit_documents(d)
-    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-    d.emit({'a' => 1}, time)
-    d.emit({'a' => 2}, time)
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.feed(time, {'a' => 1})
+    d.feed(time, {'a' => 2})
     time
   end
 
   def test_format
     d = create_driver
 
-    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-    d.emit({'a' => 1}, time)
-    d.emit({'a' => 2}, time)
-    d.expect_format([time, {'a' => 1, d.instance.time_key => time}].to_msgpack)
-    d.expect_format([time, {'a' => 2, d.instance.time_key => time}].to_msgpack)
-    d.run
-
-    documents = get_documents
-    assert_equal(2, documents.size)
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.run(default_tag: 'test') do
+      d.feed(time, {'a' => 1})
+      d.feed(time, {'a' => 2})
+    end
+    assert_equal([time, {'a' => 1}].to_msgpack, d.formatted[0])
+    assert_equal([time, {'a' => 2}].to_msgpack, d.formatted[1])
+    assert_equal(2, d.formatted.size)
   end
 
   def test_write
     d = create_driver
-    t = emit_documents(d)
-
-    d.run
+    d.run(default_tag: 'test') do
+      emit_documents(d)
+    end
     actual_documents = get_documents
-    time = Time.parse("2011-01-02 13:14:15 UTC")
-    expected = [{'a' => 1, d.instance.time_key => time},
-                {'a' => 2, d.instance.time_key => time}]
+    time = event_time("2011-01-02 13:14:15 UTC")
+    expected = [{'a' => 1, d.instance.inject_config.time_key => Time.at(time).localtime},
+                {'a' => 2, d.instance.inject_config.time_key => Time.at(time).localtime}]
     assert_equal(expected, actual_documents)
+  end
+
+  class WriteWithCollectionPlaceholder < self
+    def setup
+      @tag = 'custom'
+      setup_mongod
+    end
+
+    def teardown
+      teardown_mongod(@tag)
+    end
+
+    def test_write_with_collection_placeholder
+      d = create_driver(%[
+      type mongo
+      database #{database_name}
+      collection ${tag}
+      include_time_key true
+    ])
+      d.run(default_tag: @tag) do
+        emit_documents(d)
+      end
+      actual_documents = get_documents(@tag)
+      time = event_time("2011-01-02 13:14:15 UTC")
+      expected = [{'a' => 1, d.instance.inject_config.time_key => Time.at(time).localtime},
+                  {'a' => 2, d.instance.inject_config.time_key => Time.at(time).localtime}]
+      assert_equal(expected, actual_documents)
+    end
   end
 
   def test_write_at_enable_tag
@@ -173,19 +205,19 @@ class MongoOutputTest < ::Test::Unit::TestCase
       include_tag_key true
       include_time_key false
     ])
-    t = emit_documents(d)
-
-    d.run
+    d.run(default_tag: 'test') do
+      emit_documents(d)
+    end
     actual_documents = get_documents
-    expected = [{'a' => 1, d.instance.tag_key => 'test'},
-                {'a' => 2, d.instance.tag_key => 'test'}]
+    expected = [{'a' => 1, d.instance.inject_config.tag_key => 'test'},
+                {'a' => 2, d.instance.inject_config.tag_key => 'test'}]
     assert_equal(expected, actual_documents)
   end
 
   def emit_invalid_documents(d)
-    time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-    d.emit({'a' => 3, 'b' => "c", '$last' => '石動'}, time)
-    d.emit({'a' => 4, 'b' => "d", 'first' => '菖蒲'.encode('EUC-JP').force_encoding('UTF-8')}, time)
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.feed(time, {'a' => 3, 'b' => "c", '$last' => '石動'})
+    d.feed(time, {'a' => 4, 'b' => "d", 'first' => '菖蒲'.encode('EUC-JP').force_encoding('UTF-8')})
     time
   end
 
@@ -195,19 +227,19 @@ class MongoOutputTest < ::Test::Unit::TestCase
       replace_dollar_in_key_with _dollar_
     ])
 
-    original_time = "2016-02-01 13:14:15 UTC"
-    time = Time.parse(original_time).to_i
-    d.emit({
-      "foo.bar1" => {
-        "$foo$bar" => "baz"
-      },
-      "foo.bar2" => [
-        {
-          "$foo$bar" => "baz"
-        }
-      ],
-    }, time)
-    d.run
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.run(default_tag: 'test') do
+      d.feed(time, {
+        "foo.bar1" => {
+           "$foo$bar" => "baz"
+        },
+        "foo.bar2" => [
+          {
+            "$foo$bar" => "baz"
+          }
+        ],
+             })
+    end
 
     documents = get_documents
     expected = {"foo_dot_bar1" => {
@@ -217,7 +249,7 @@ class MongoOutputTest < ::Test::Unit::TestCase
                   {
                     "_dollar_foo$bar"=>"baz"
                   },
-                ], "time" => Time.parse(original_time)
+                ], "time" => Time.at(time).localtime
                }
     assert_equal(1, documents.size)
     assert_equal(expected, documents[0])
@@ -242,13 +274,13 @@ class MongoOutputTest < ::Test::Unit::TestCase
         user fluent
         password password
       ])
-      t = emit_documents(d)
-
-      d.run
+      d.run(default_tag: 'test') do
+        emit_documents(d)
+      end
       actual_documents = get_documents
-      time = Time.parse("2011-01-02 13:14:15 UTC")
-      expected = [{'a' => 1, d.instance.time_key => time},
-                  {'a' => 2, d.instance.time_key => time}]
+      time = event_time("2011-01-02 13:14:15 UTC")
+      expected = [{'a' => 1, d.instance.inject_config.time_key => Time.at(time).localtime},
+                  {'a' => 2, d.instance.inject_config.time_key => Time.at(time).localtime}]
       assert_equal(expected, actual_documents)
     end
   end

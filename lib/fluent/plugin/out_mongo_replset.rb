@@ -1,12 +1,8 @@
 require 'fluent/plugin/out_mongo'
 
-module Fluent
+module Fluent::Plugin
   class MongoOutputReplset < MongoOutput
-    Plugin.register_output('mongo_replset', self)
-
-    unless method_defined?(:log)
-      define_method(:log) { $log }
-    end
+    Fluent::Plugin.register_output('mongo_replset', self)
 
     config_set_default :include_tag_key, false
     config_set_default :include_time_key, true
@@ -17,10 +13,6 @@ module Fluent
     config_param :read, :string, :default => nil
     desc "Retry number"
     config_param :num_retries, :integer, :default => 60
-
-    unless method_defined?(:log)
-      define_method(:log) { $log }
-    end
 
     def configure(conf)
       super
@@ -33,6 +25,14 @@ module Fluent
       end
 
       log.debug "Setup replica set configuration: #{conf['replica_set']}"
+    end
+
+    def format(tag, time, record)
+      super
+    end
+
+    def write(chunk)
+      super
     end
 
     private

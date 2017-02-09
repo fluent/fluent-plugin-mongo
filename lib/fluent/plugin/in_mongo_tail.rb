@@ -1,23 +1,19 @@
-require 'fluent/input'
+# coding: utf-8
+require 'mongo'
+require 'bson'
+require 'fluent/plugin/input'
+require 'fluent/plugin/mongo_auth'
+require 'fluent/plugin/logger_support'
 
-module Fluent
+module Fluent::Plugin
   class MongoTailInput < Input
-    Plugin.register_input('mongo_tail', self)
+    Fluent::Plugin.register_input('mongo_tail', self)
 
-    unless method_defined?(:log)
-      define_method(:log) { $log }
-    end
+    helpers :timer
 
-    # Define `router` method of v0.12 to support v0.10 or earlier
-    unless method_defined?(:router)
-      define_method("router") { ::Fluent::Engine }
-    end
-
-    require 'fluent/plugin/mongo_auth'
-    include MongoAuthParams
-    include MongoAuth
-    require 'fluent/plugin/logger_support'
-    include LoggerSupport
+    include Fluent::MongoAuthParams
+    include Fluent::MongoAuth
+    include Fluent::LoggerSupport
 
     desc "MongoDB database"
     config_param :database, :string, default: nil
@@ -50,8 +46,6 @@ module Fluent
 
     def initialize
       super
-      require 'mongo'
-      require 'bson'
 
       @client_options = {}
       @connection_options = {}
@@ -61,15 +55,15 @@ module Fluent
       super
 
       if !@tag and !@tag_key
-        raise ConfigError, "'tag' or 'tag_key' option is required on mongo_tail input"
+        raise Fluent::ConfigError, "'tag' or 'tag_key' option is required on mongo_tail input"
       end
 
       if @database && @url
-        raise ConfigError, "Both 'database' and 'url' can not be set"
+        raise Fluent::ConfigError, "Both 'database' and 'url' can not be set"
       end
 
       if !@database && !@url
-        raise ConfigError, "One of 'database' or 'url' must be specified"
+        raise Fluent::ConfigError, "One of 'database' or 'url' must be specified"
       end
 
       @last_id = @id_store_file ? get_last_id : nil
@@ -86,7 +80,7 @@ module Fluent
       # Resume tailing from last inserted id.
       # Because tailable option is obsoleted since mongo driver 2.0.
       @last_id = get_last_inserted_id if !@id_store_file and get_last_inserted_id
-      @thread = Thread.new(&method(:run))
+      timer_execute(:in_mongo_tail_watcher, @wait_time, &method(:run))
     end
 
     def shutdown
@@ -95,32 +89,22 @@ module Fluent
         @file.close
       end
 
-      @stop = true
-      @thread.join
       @client.close
 
       super
     end
 
     def run
-      loop {
-        option = {}
-        begin
-          loop {
-            return if @stop
-
-            option['_id'] = {'$gt' => BSON::ObjectId(@last_id)} if @last_id
-            documents = @collection.find(option)
-            if documents.count >= 1
-              process_documents(documents)
-            else
-              sleep @wait_time
-            end
-          }
-        rescue
-          # ignore Exceptions
+      option = {}
+      begin
+        option['_id'] = {'$gt' => BSON::ObjectId(@last_id)} if @last_id
+        documents = @collection.find(option)
+        if documents.count >= 1
+          process_documents(documents)
         end
-      }
+      rescue
+        # ignore Exceptions
+      end
     end
 
     private
@@ -148,13 +132,13 @@ module Fluent
     end
 
     def process_documents(documents)
-      es = MultiEventStream.new
+      es = Fluent::MultiEventStream.new
       documents.each {|doc|
         time = if @time_key
                  t = doc.delete(@time_key)
-                 t.nil? ? Engine.now : t.to_i
+                 t.nil? ? Fluent::Engine.now : t.to_i
                else
-                 Engine.now
+                 Fluent::Engine.now
                end
         @tag = if @tag_key
                 t = doc.delete(@tag_key)

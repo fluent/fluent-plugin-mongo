@@ -1,23 +1,22 @@
-require 'fluent/output'
+require 'mongo'
+require 'msgpack'
+require 'fluent/plugin/output'
+require 'fluent/plugin/mongo_auth'
+require 'fluent/plugin/logger_support'
 
-module Fluent
-  class MongoOutput < BufferedOutput
-    Plugin.register_output('mongo', self)
+module Fluent::Plugin
+  class MongoOutput < Output
+    Fluent::Plugin.register_output('mongo', self)
 
-    unless method_defined?(:log)
-      define_method(:log) { $log }
-    end
+    helpers :event_emitter, :inject, :compat_parameters
 
-    require 'fluent/plugin/mongo_auth'
-    include MongoAuthParams
-    include MongoAuth
-    require 'fluent/plugin/logger_support'
-    include LoggerSupport
+    include Fluent::MongoAuthParams
+    include Fluent::MongoAuth
+    include Fluent::LoggerSupport
 
-    include SetTagKeyMixin
+    DEFAULT_BUFFER_TYPE = "memory"
+
     config_set_default :include_tag_key, false
-
-    include SetTimeKeyMixin
     config_set_default :include_time_key, true
 
     desc "MongoDB database"
@@ -51,13 +50,15 @@ module Fluent
     config_param :ssl_verify, :bool, default: false
     config_param :ssl_ca_cert, :string, default: nil
 
+    config_section :buffer do
+      config_set_default :@type, DEFAULT_BUFFER_TYPE
+      config_set_default :chunk_keys, ['tag']
+    end
+
     attr_reader :client_options, :collection_options
 
     def initialize
       super
-
-      require 'mongo'
-      require 'msgpack'
 
       @client_options = {}
       @collection_options = {capped: false}
@@ -69,10 +70,10 @@ module Fluent
 
     def configure(conf)
       if conf.has_key?('buffer_chunk_limit')
-        configured_chunk_limit_size = Config.size_value(conf['buffer_chunk_limit'])
+        configured_chunk_limit_size = Fluent::Config.size_value(conf['buffer_chunk_limit'])
         estimated_limit_size = LIMIT_AFTER_v1_8
         estimated_limit_size_conf = '8m'
-        if conf.has_key?('mongodb_smaller_bson_limit') && Config.bool_value(conf['mongodb_smaller_bson_limit'])
+        if conf.has_key?('mongodb_smaller_bson_limit') && Fluent::Config.bool_value(conf['mongodb_smaller_bson_limit'])
           estimated_limit_size = LIMIT_BEFORE_v1_8
           estimated_limit_size_conf = '2m'
         end
@@ -81,12 +82,13 @@ module Fluent
           conf['buffer_chunk_limit'] = estimated_limit_size_conf
         end
       else
-        if conf.has_key?('mongodb_smaller_bson_limit') && Config.bool_value(conf['mongodb_smaller_bson_limit'])
+        if conf.has_key?('mongodb_smaller_bson_limit') && Fluent::Config.bool_value(conf['mongodb_smaller_bson_limit'])
           conf['buffer_chunk_limit'] = '2m'
         else
           conf['buffer_chunk_limit'] = '8m'
         end
       end
+      compat_parameters_convert(conf, :inject)
 
       super
 
@@ -95,15 +97,16 @@ module Fluent
       end
 
       if conf.has_key?('tag_mapped')
-        @tag_mapped = true
+        log.warn "'tag_mapped' feature is replaced with built-in config placeholder. Please consider to use 'collection ${tag}'."
+        @collection = '${tag}'
       end
-      raise ConfigError, "normal mode requires collection parameter" if !@tag_mapped and !conf.has_key?('collection')
+      raise Fluent::ConfigError, "normal mode requires collection parameter" if !@tag_mapped and !conf.has_key?('collection')
 
       if conf.has_key?('capped')
-        raise ConfigError, "'capped_size' parameter is required on <store> of Mongo output" unless conf.has_key?('capped_size')
+        raise Fluent::ConfigError, "'capped_size' parameter is required on <store> of Mongo output" unless conf.has_key?('capped_size')
         @collection_options[:capped] = true
-        @collection_options[:size] = Config.size_value(conf['capped_size'])
-        @collection_options[:max] = Config.size_value(conf['capped_max']) if conf.has_key?('capped_max')
+        @collection_options[:size] = Fluent::Config.size_value(conf['capped_size'])
+        @collection_options[:max] = Fluent::Config.size_value(conf['capped_max']) if conf.has_key?('capped_max')
       end
 
       if remove_tag_prefix = conf['remove_tag_prefix']
@@ -120,11 +123,6 @@ module Fluent
         @client_options[:ssl_key_pass_phrase] = @ssl_key_pass_phrase
         @client_options[:ssl_verify] = @ssl_verify
         @client_options[:ssl_ca_cert] = @ssl_ca_cert
-      end
-
-      # MongoDB uses BSON's Date for time.
-      def @timef.format_nocache(time)
-        time
       end
 
       configure_logger(@mongo_log_level)
@@ -155,8 +153,16 @@ module Fluent
       [time, record].to_msgpack
     end
 
+    def formatted_to_msgpack_binary
+      true
+    end
+
+    def multi_workers_ready?
+      true
+    end
+
     def write(chunk)
-      collection_name = @tag_mapped ? chunk.key : @collection
+      collection_name = extract_placeholders(@collection, chunk.metadata)
       operate(format_collection_name(collection_name), collect_records(chunk))
     end
 
@@ -171,8 +177,12 @@ module Fluent
 
     def collect_records(chunk)
       records = []
+      time_key = @inject_config.time_key
+      tag = chunk.metadata.tag
       chunk.msgpack_each {|time, record|
-        record[@time_key] = Time.at(time || record[@time_key]) if @include_time_key
+        record = inject_values_to_record(tag, time, record)
+        # MongoDB uses BSON's Date for time.
+        record[time_key] = Time.at(time || record[time_key]) if time_key
         records << record
       }
       records
