@@ -1,3 +1,8 @@
+Release 0.8.0 - 2017/02/10
+
+	* Update mongo gem dependency to v2.0 or upper
+
+
 Release 0.7.16 - 2016/10/05
 
 	* out_mongo: Log warn / deprecated message for invalid record handling
