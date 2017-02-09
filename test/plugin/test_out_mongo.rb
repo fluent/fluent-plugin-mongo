@@ -2,7 +2,6 @@
 require "helper"
 require "fluent/test/driver/output"
 require "fluent/test/helpers"
-require 'fluent/mixin' # for TimeFormatter
 
 class MongoOutputTest < ::Test::Unit::TestCase
   include Fluent::Test::Helpers
