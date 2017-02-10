@@ -38,9 +38,11 @@ module Fluent::Plugin
 
     # tag mapping mode
     desc "Use tag_mapped mode"
-    config_param :tag_mapped, :bool, default: false
+    config_param :tag_mapped, :bool, default: false,
+                 deprecated: "use '${tag}' placeholder in collection parameter."
     desc "Remove tag prefix"
-    config_param :remove_tag_prefix, :string, default: nil
+    config_param :remove_tag_prefix, :string, default: nil,
+                 deprecated: "use @label instead for event routing."
 
     # SSL connection
     config_param :ssl, :bool, default: false
