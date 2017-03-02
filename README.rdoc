@@ -7,7 +7,7 @@ fluent-plugin-mongo provides input and output plugins for {Fluentd}[http://fluen
     |fluent-plugin-mongo|   fluentd  |  ruby  |
     |-------------------|------------|--------|
     |     >= 1.0.0      | >= 0.14.12 | >= 2.1 |
-    |     <  1.0.0      | ~> 0.12.0  | >= 1.9 |
+    |     <  1.0.0      | >= 0.12.0  | >= 1.9 |
 
 = Installation
 
@@ -89,7 +89,6 @@ Replica Set version of mongo.
       database fluent
       collection logs
 
-      # each node separated by ','
       host localhost
       port 27017
 
@@ -124,25 +123,6 @@ Use _mongo_replset_ type in match.
       #refresh_mode sync
       #refresh_interval 60
       #num_retries 60
-    </match>
-
-=== mongo_backup
-
-Store Fluentd event to local capped collection for backup.
-
-==== Configuration
-
-Use _mongo_backup_ type in match. _mongo_backup_ alwalys use capped collection.
-
-    <match ...>
-      type mongo_backup
-      capped_size 100m
-
-      <store>
-        type tcp
-        host 192.168.0.13
-        ...
-      </store>
     </match>
 
 == Input plugin
@@ -302,13 +282,6 @@ You can use 'mongod' environment variable for specified mongod:
     $ mongod=/path/to/mongod bundle exec rake test
 
 Note that source code in test/tools are from mongo-ruby-driver.
-
-= TODO
-
-== More configuration
-
-- Multi process
-- etc
 
 = Copyright
 
