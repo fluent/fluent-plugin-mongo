@@ -66,6 +66,30 @@ class MongoOutputTest < ::Test::Unit::TestCase
     assert_equal(port, d.instance.port)
     assert_equal({capped: true, size: 100}, d.instance.collection_options)
     assert_equal({ssl: false, write: {j: false}}, d.instance.client_options)
+    assert_nil d.instance.connection_string
+  end
+
+  def test_configure_with_connection_string
+    d = create_driver(%[
+      type mongo
+      connection_string mongodb://localhost/fluent_test
+      collection test_collection
+      capped
+      capped_size 100
+    ])
+    assert_equal('mongodb://localhost/fluent_test', d.instance.connection_string)
+    assert_nil d.instance.database
+  end
+
+  def test_configure_without_connection_string_or_database
+    assert_raise Fluent::ConfigError do
+      d = create_driver(%[
+        type mongo
+        collection test_collection
+        capped
+        capped_size 100
+      ])
+    end
   end
 
   def test_configure_with_ssl
