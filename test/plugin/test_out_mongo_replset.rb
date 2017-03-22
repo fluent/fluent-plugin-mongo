@@ -47,17 +47,32 @@ class MongoReplsetOutputTest < ::Test::Unit::TestCase
   def test_configure
     d = create_driver(%[
       @type mongo_replset
-      nodes localhost:27018
+      port 27018
       database fluent_test
       collection test_collection
-
       replica_set rs0
     ])
 
     assert_equal('fluent_test', d.instance.database)
     assert_equal('test_collection', d.instance.collection)
     assert_equal('localhost', d.instance.host)
-    assert_equal(port, d.instance.port)
+    assert_equal(27018, d.instance.port)
+    assert_equal({replica_set: 'rs0', :ssl=>false, :write=>{:j=>false}},
+                 d.instance.client_options)
+  end
+
+  def test_configure_with_nodes
+    d = create_driver(%[
+      @type mongo_replset
+      nodes localhost:27018,localhost:27019
+      database fluent_test
+      collection test_collection
+      replica_set rs0
+    ])
+
+    assert_equal('fluent_test', d.instance.database)
+    assert_equal('test_collection', d.instance.collection)
+    assert_equal(['localhost:27018', 'localhost:27019'], d.instance.nodes)
     assert_equal({replica_set: 'rs0', :ssl=>false, :write=>{:j=>false}},
                  d.instance.client_options)
   end

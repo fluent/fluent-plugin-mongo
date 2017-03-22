@@ -52,7 +52,7 @@ class MongoOutputTest < ::Test::Unit::TestCase
 
   def test_configure
     d = create_driver(%[
-      type mongo
+      @type mongo
       database fluent_test
       collection test_collection
 
@@ -71,7 +71,7 @@ class MongoOutputTest < ::Test::Unit::TestCase
 
   def test_configure_with_connection_string
     d = create_driver(%[
-      type mongo
+      @type mongo
       connection_string mongodb://localhost/fluent_test
       collection test_collection
       capped
@@ -84,7 +84,7 @@ class MongoOutputTest < ::Test::Unit::TestCase
   def test_configure_without_connection_string_or_database
     assert_raise Fluent::ConfigError do
       d = create_driver(%[
-        type mongo
+        @type mongo
         collection test_collection
         capped
         capped_size 100
@@ -208,11 +208,11 @@ class MongoOutputTest < ::Test::Unit::TestCase
 
     def test_write_with_collection_placeholder
       d = create_driver(%[
-      type mongo
-      database #{database_name}
-      collection ${tag}
-      include_time_key true
-    ])
+        @type mongo
+        database #{database_name}
+        collection ${tag}
+        include_time_key true
+      ])
       d.run(default_tag: @tag) do
         emit_documents(d)
       end
