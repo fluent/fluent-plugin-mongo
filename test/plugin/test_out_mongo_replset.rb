@@ -21,14 +21,18 @@ class MongoReplsetOutputTest < ::Test::Unit::TestCase
     'fluent_test'
   end
 
+  def nodes
+    ["localhost:#{port}"]
+  end
+
   def port
     27018
   end
 
   def default_config
     %[
-      type mongo
-      port 27018
+      @type mongo_replset
+      nodes localhost:27018
       database #{database_name}
       collection #{collection_name}
       include_time_key true
@@ -42,8 +46,8 @@ class MongoReplsetOutputTest < ::Test::Unit::TestCase
 
   def test_configure
     d = create_driver(%[
-      type mongo
-      port 27018
+      @type mongo_replset
+      nodes localhost:27018
       database fluent_test
       collection test_collection
 
@@ -83,7 +87,7 @@ class MongoReplsetOutputTest < ::Test::Unit::TestCase
     def setup_mongod
       options = {}
       options[:database] = database_name
-      @client = ::Mongo::Client.new(["localhost:#{port}"], options)
+      @client = ::Mongo::Client.new(nodes, options)
     end
 
     def teardown_mongod

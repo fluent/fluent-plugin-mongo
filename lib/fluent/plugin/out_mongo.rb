@@ -62,6 +62,7 @@ module Fluent::Plugin
     def initialize
       super
 
+      @nodes = nil
       @client_options = {}
       @collection_options = {capped: false}
     end
@@ -126,6 +127,7 @@ module Fluent::Plugin
         @client_options[:ssl_verify] = @ssl_verify
         @client_options[:ssl_ca_cert] = @ssl_ca_cert
       end
+      @nodes = ["#{@host}:#{@port}"] if @nodes.nil?
 
       configure_logger(@mongo_log_level)
 
@@ -174,7 +176,7 @@ module Fluent::Plugin
       @client_options[:database] = @database
       @client_options[:user] = @user if @user
       @client_options[:password] = @password if @password
-      Mongo::Client.new(["#{@host}:#{@port}"], @client_options)
+      Mongo::Client.new(@nodes, @client_options)
     end
 
     def collect_records(chunk)
