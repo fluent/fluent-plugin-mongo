@@ -52,7 +52,7 @@ class MongoOutputTest < ::Test::Unit::TestCase
 
   def test_configure
     d = create_driver(%[
-      type mongo
+      @type mongo
       database fluent_test
       collection test_collection
 
@@ -66,6 +66,30 @@ class MongoOutputTest < ::Test::Unit::TestCase
     assert_equal(port, d.instance.port)
     assert_equal({capped: true, size: 100}, d.instance.collection_options)
     assert_equal({ssl: false, write: {j: false}}, d.instance.client_options)
+    assert_nil d.instance.connection_string
+  end
+
+  def test_configure_with_connection_string
+    d = create_driver(%[
+      @type mongo
+      connection_string mongodb://localhost/fluent_test
+      collection test_collection
+      capped
+      capped_size 100
+    ])
+    assert_equal('mongodb://localhost/fluent_test', d.instance.connection_string)
+    assert_nil d.instance.database
+  end
+
+  def test_configure_without_connection_string_or_database
+    assert_raise Fluent::ConfigError do
+      d = create_driver(%[
+        @type mongo
+        collection test_collection
+        capped
+        capped_size 100
+      ])
+    end
   end
 
   def test_configure_with_ssl
@@ -184,11 +208,11 @@ class MongoOutputTest < ::Test::Unit::TestCase
 
     def test_write_with_collection_placeholder
       d = create_driver(%[
-      type mongo
-      database #{database_name}
-      collection ${tag}
-      include_time_key true
-    ])
+        @type mongo
+        database #{database_name}
+        collection ${tag}
+        include_time_key true
+      ])
       d.run(default_tag: @tag) do
         emit_documents(d)
       end
