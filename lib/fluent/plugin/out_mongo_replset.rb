@@ -11,6 +11,8 @@ module Fluent
     config_set_default :include_tag_key, false
     config_set_default :include_time_key, true
 
+    desc "Nodes of replica set"
+    config_param :nodes, :array, value_type: :string, :default => nil
     desc "Replica set name"
     config_param :replica_set, :string
     desc "Read from specified role"

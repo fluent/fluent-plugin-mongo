@@ -20,8 +20,10 @@ module Fluent
     include SetTimeKeyMixin
     config_set_default :include_time_key, true
 
+    desc "MongoDB connection string"
+    config_param :connection_string, :default => nil
     desc "MongoDB database"
-    config_param :database, :string
+    config_param :database, :string, :default => nil
     desc "MongoDB collection"
     config_param :collection, :string, default: 'untagged'
     desc "MongoDB host"
@@ -59,6 +61,7 @@ module Fluent
       require 'mongo'
       require 'msgpack'
 
+      @nodes = nil
       @client_options = {}
       @collection_options = {capped: false}
     end
@@ -89,6 +92,10 @@ module Fluent
       end
 
       super
+
+      if @connection_string.nil? && @database.nil?
+        raise Fluent::ConfigError,  "connection_string or database parameter is required"
+      end
 
       unless @ignore_invalid_record
         log.warn "Since v0.8, invalid record detection will be removed because mongo driver v2.x and API spec don't provide it. You may lose invalid records, so you should not send such records to mongo plugin"
@@ -121,6 +128,7 @@ module Fluent
         @client_options[:ssl_verify] = @ssl_verify
         @client_options[:ssl_ca_cert] = @ssl_ca_cert
       end
+      @nodes = ["#{@host}:#{@port}"] if @nodes.nil?
 
       # MongoDB uses BSON's Date for time.
       def @timef.format_nocache(time)
@@ -163,10 +171,14 @@ module Fluent
     private
 
     def client
-      @client_options[:database] = @database
-      @client_options[:user] = @user if @user
-      @client_options[:password] = @password if @password
-      Mongo::Client.new(["#{@host}:#{@port}"], @client_options)
+      if @connection_string
+        Mongo::Client.new(@connection_string)
+      else
+        @client_options[:database] = @database
+        @client_options[:user] = @user if @user
+        @client_options[:password] = @password if @password
+        Mongo::Client.new(@nodes, @client_options)
+      end
     end
 
     def collect_records(chunk)
