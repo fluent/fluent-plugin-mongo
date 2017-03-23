@@ -31,23 +31,32 @@ Use _mongo_ type in match.
 
     <match mongo.**>
       type mongo
-      database fluent
-      collection test
 
-      # Following attibutes are optional
+      # You can choose two approaches, connection_string or each parameter
+      # 1. connection_string for MongoDB URI
+      connection_string mongodb://fluenter:10000/fluent
+
+      # 2. specify each parameter
+      database fluent
       host fluenter
       port 10000
+
+      # collection name to insert
+      collection test
+
+      # Set 'user' and 'password' for authentication.
+      # These options are not used when use connection_string parameter.
+      user handa
+      password shinobu
 
       # Set 'capped' if you want to use capped collection
       capped
       capped_size 100m
 
-      # Set 'user' and 'password' for authentication
-      user handa
-      password shinobu
-
       # Other buffer configurations here
     </match>
+
+For _connection_string_ parameter, see https://docs.mongodb.com/manual/reference/connection-string/ article for more detail.
 
 === mongo(tag mapped mode)
 
@@ -89,8 +98,7 @@ Replica Set version of mongo.
       database fluent
       collection logs
 
-      host localhost
-      port 27017
+      nodes localhost:27017,localhost:27018
 
       # The replica set name
       replica_set myapp
