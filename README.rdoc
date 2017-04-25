@@ -30,7 +30,7 @@ Store Fluentd event to MongoDB database.
 Use _mongo_ type in match.
 
     <match mongo.**>
-      type mongo
+      @type mongo
 
       # You can choose two approaches, connection_string or each parameter
       # 1. connection_string for MongoDB URI
@@ -69,7 +69,7 @@ Use _tag_mapped_ parameter in match of _mongo_ type.
 If tag name is "foo.bar", auto create collection "foo.bar" and insert data.
 
     <match forward.*>
-      type mongo
+      @type mongo
       database fluent
 
       # Set 'tag_mapped' if you want to use tag mapped mode.
@@ -94,7 +94,7 @@ Replica Set version of mongo.
 ===== v0.8 or later
 
     <match mongo.**>
-      type mongo_replset
+      @type mongo_replset
       database fluent
       collection logs
 
@@ -118,7 +118,7 @@ Replica Set version of mongo.
 Use _mongo_replset_ type in match.
 
     <match mongo.**>
-      type mongo_replset
+      @type mongo_replset
       database fluent
       collection logs
 
@@ -144,7 +144,7 @@ Tail capped collection to input data.
 Use _mongo_tail_ type in source.
 
     <source>
-      type mongo_tail
+      @type mongo_tail
       database fluent
       collection capped_log
 
@@ -163,7 +163,7 @@ Use _mongo_tail_ type in source.
 You can also use _url_ to specify the database to connect.
 
     <source>
-      type mongo_tail
+      @type mongo_tail
       url mongodb://user:password@192.168.0.13:10249,192.168.0.14:10249/database
       collection capped_log
       ...
