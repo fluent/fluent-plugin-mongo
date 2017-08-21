@@ -143,6 +143,7 @@ module Fluent::Plugin
     def start
       @client = client
       @client = authenticate(@client)
+      @server_version = server_version()
       @collections = {}
       super
     end
@@ -214,10 +215,14 @@ module Fluent::Plugin
     end
 
     def collection_exists?(name)
-      r = @client.database.command(
-        { :listCollections => 1, :filter => { :name => name } }
-      ).documents[0]
-      r["ok"] && r["cursor"]["firstBatch"].size == 1
+      if @server_version[0] >= 3 # for MongoDB 3.0.0+
+        r = @client.database.command(
+          { :listCollections => 1, :filter => { :name => name } }
+        ).documents[0]
+        r["ok"] && r["cursor"]["firstBatch"].size == 1
+      else
+        @client.database.collection_names.include?(name)
+      end
     end
 
     def get_collection(name, options)
@@ -232,6 +237,10 @@ module Fluent::Plugin
 
     def forget_collection(name)
       @collections.delete(name)
+    end
+
+    def server_version
+      @client.database.command(:buildInfo => 1).first[:versionArray]
     end
 
     def operate(collection, records)
