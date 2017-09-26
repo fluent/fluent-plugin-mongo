@@ -93,6 +93,17 @@ module Fluent::Plugin
           conf['buffer_chunk_limit'] = '8m'
         end
       end
+      # 'config_set_default :include_time_key, true' is ignored in compat_parameters_convert so need manual setting
+      if conf.elements('inject').empty?
+        if conf.has_key?('include_time_key')
+          if Fluent::Config.bool_value(conf['include_time_key']) && !conf.has_key?('time_key')
+            conf['time_key'] = 'time'
+          end
+        else
+          conf['time_key'] = 'time'
+        end
+      end
+
       compat_parameters_convert(conf, :inject)
 
       super
