@@ -230,8 +230,8 @@ module Fluent::Plugin
 
       unless collection_exists?(name)
         @client[name, options].create
-        @collections[name] = true
       end
+      @collections[name] = true
       @client[name]
     end
 
