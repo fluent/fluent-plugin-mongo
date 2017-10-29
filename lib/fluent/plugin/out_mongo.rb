@@ -232,6 +232,7 @@ module Fluent::Plugin
       return @client[name] if @collections[name]
 
       unless collection_exists?(name)
+        log.trace "Create collection #{name} with options #{options}"
         @client[name, options].create
       end
       @collections[name] = true
