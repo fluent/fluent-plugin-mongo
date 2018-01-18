@@ -93,6 +93,7 @@ class MongoTailInputTest < Test::Unit::TestCase
         collection #{collection_name}
         tag input.mongo
         time_key time
+        batch_size 10000
       ])
       d.run(expect_records: 1, timeout: 5) do
         @client[collection_name].insert_one({message: "test"})

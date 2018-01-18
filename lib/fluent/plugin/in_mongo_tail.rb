@@ -44,6 +44,9 @@ module Fluent::Plugin
     desc "SSL connection"
     config_param :ssl, :bool, default: false
 
+    desc "Batch size for each find"
+    config_param :batch_size, :integer, default: nil
+
     def initialize
       super
 
@@ -68,6 +71,10 @@ module Fluent::Plugin
 
       @last_id = @id_store_file ? get_last_id : nil
       @connection_options[:ssl] = @ssl
+
+      if @batch_size && @batch_size <= 0
+        raise Fluent::ConfigError, "Batch size must be positive."
+      end
 
       configure_logger(@mongo_log_level)
     end
@@ -99,6 +106,7 @@ module Fluent::Plugin
       begin
         option['_id'] = {'$gt' => BSON::ObjectId(@last_id)} if @last_id
         documents = @collection.find(option)
+        documents = documents.limit(@batch_size) if @batch_size
         if documents.count >= 1
           process_documents(documents)
         end
