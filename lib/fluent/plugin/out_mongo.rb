@@ -203,7 +203,7 @@ module Fluent::Plugin
 
     def collect_records(chunk)
       records = []
-      time_key = @inject_config.time_key
+      time_key = @inject_config.time_key if @inject_config
       tag = chunk.metadata.tag
       chunk.msgpack_each {|time, record|
         record = inject_values_to_record(tag, time, record)
