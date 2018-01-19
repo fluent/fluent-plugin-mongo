@@ -154,6 +154,7 @@ module Fluent::Plugin
     def start
       @client = client
       @client = authenticate(@client)
+      @collections = {}
       super
     end
 
@@ -223,6 +224,36 @@ module Fluent::Plugin
       formatted
     end
 
+    def list_collections_enabled?
+      @client.cluster.next_primary(false).features.list_collections_enabled?
+    end
+
+    def collection_exists?(name)
+      if list_collections_enabled?
+        r = @client.database.command(
+          { :listCollections => 1, :filter => { :name => name } }
+        ).first
+        r[:ok] && r[:cursor][:firstBatch].size == 1
+      else
+        @client.database.collection_names.include?(name)
+      end
+    end
+
+    def get_collection(name, options)
+      return @client[name] if @collections[name]
+
+      unless collection_exists?(name)
+        log.trace "Create collection #{name} with options #{options}"
+        @client[name, options].create
+      end
+      @collections[name] = true
+      @client[name]
+    end
+
+    def forget_collection(name)
+      @collections.delete(name)
+    end
+
     def operate(collection, records)
       begin
         if @replace_dot_in_key_with
@@ -236,9 +267,10 @@ module Fluent::Plugin
           end
         end
 
-        @client[collection, @collection_options].insert_many(records)
+        get_collection(collection, @collection_options).insert_many(records)
       rescue Mongo::Error::BulkWriteError => e
         log.warn "#{records.size - e.result["n_inserted"]} documents are not inserted. Maybe these documents are invalid as a BSON."
+        forget_collection(collection)
       rescue ArgumentError => e
         log.warn e
       end
