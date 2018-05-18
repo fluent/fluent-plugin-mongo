@@ -163,14 +163,6 @@ module Fluent::Plugin
       super
     end
 
-    def emit(tag, es, chain)
-      if @tag_mapped
-        super(tag, es, chain, tag)
-      else
-        super(tag, es, chain)
-      end
-    end
-
     def formatted_to_msgpack_binary
       true
     end
