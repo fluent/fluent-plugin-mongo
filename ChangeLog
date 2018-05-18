@@ -1,3 +1,8 @@
+Release 1.1.1 - 2018/05/17
+
+	* out_mongo/out_mongo_replset: Use built-in Output#format to fix EventTime serialization
+
+
 Release 1.1.0 - 2018/01/18
 
 	* in_mongo: Add batch_size parameter
