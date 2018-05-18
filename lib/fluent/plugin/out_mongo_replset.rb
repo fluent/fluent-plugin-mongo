@@ -29,10 +29,6 @@ module Fluent::Plugin
       log.debug "Setup replica set configuration: #{conf['replica_set']}"
     end
 
-    def format(tag, time, record)
-      super
-    end
-
     def write(chunk)
       super
     end

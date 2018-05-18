@@ -120,19 +120,6 @@ class MongoReplsetOutputTest < ::Test::Unit::TestCase
       time
     end
 
-    def test_format
-      d = create_driver
-
-      time = event_time("2011-01-02 13:14:15 UTC")
-      d.run(default_tag: 'test') do
-        d.feed(time, {'a' => 1})
-        d.feed(time, {'a' => 2})
-      end
-      assert_equal([time, {'a' => 1}].to_msgpack, d.formatted[0])
-      assert_equal([time, {'a' => 2}].to_msgpack, d.formatted[1])
-      assert_equal(2, d.formatted.size)
-    end
-
     def test_write
       d = create_driver
       d.run(default_tag: 'test') do
