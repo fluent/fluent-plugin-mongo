@@ -18,7 +18,7 @@ Gem::Specification.new do |gem|
   gem.require_paths = ['lib']
 
   gem.add_dependency "fluentd", [">= 0.14.12", "< 2"]
-  gem.add_runtime_dependency "mongo", "~> 2.6.1"
+  gem.add_runtime_dependency "mongo", ">= 2.2.0"
   gem.add_development_dependency "rake", ">= 0.9.2"
   gem.add_development_dependency "simplecov", ">= 0.5.4"
   gem.add_development_dependency "rr", ">= 1.0.0"
