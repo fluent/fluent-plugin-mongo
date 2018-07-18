@@ -1,3 +1,8 @@
+Release 1.1.2 - 2018/07/19
+
+	* Update mongo gem dependency
+
+
 Release 1.1.1 - 2018/05/17
 
 	* out_mongo/out_mongo_replset: Use built-in Output#format to fix EventTime serialization
