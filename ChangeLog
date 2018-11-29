@@ -1,3 +1,7 @@
+Release 1.2.0 - 2018/11/29
+
+	* out_mongo: Support placeholder in database parameter
+
 Release 1.1.2 - 2018/07/19
 
 	* Update mongo gem dependency
