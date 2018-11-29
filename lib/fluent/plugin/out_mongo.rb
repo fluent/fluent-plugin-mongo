@@ -173,16 +173,17 @@ module Fluent::Plugin
 
     def write(chunk)
       collection_name = extract_placeholders(@collection, chunk.metadata)
-      operate(format_collection_name(collection_name), collect_records(chunk))
+      database_name = extract_placeholders(@database, chunk.metadata)
+      operate(database_name, format_collection_name(collection_name), collect_records(chunk))
     end
 
     private
 
-    def client
+    def client(database = @database)
       if @connection_string
         Mongo::Client.new(@connection_string)
       else
-        @client_options[:database] = @database
+        @client_options[:database] = database
         @client_options[:user] = @user if @user
         @client_options[:password] = @password if @password
         Mongo::Client.new(@nodes, @client_options)
@@ -227,7 +228,8 @@ module Fluent::Plugin
       end
     end
 
-    def get_collection(name, options)
+    def get_collection(database, name,  options)
+      @client = client(database) if database && @database != database
       return @client[name] if @collections[name]
 
       unless collection_exists?(name)
@@ -242,7 +244,7 @@ module Fluent::Plugin
       @collections.delete(name)
     end
 
-    def operate(collection, records)
+    def operate(database, collection, records)
       begin
         if @replace_dot_in_key_with
           records.map! do |r|
@@ -255,7 +257,7 @@ module Fluent::Plugin
           end
         end
 
-        get_collection(collection, @collection_options).insert_many(records)
+        get_collection(database, collection, @collection_options).insert_many(records)
       rescue Mongo::Error::BulkWriteError => e
         log.warn "#{records.size - e.result["n_inserted"]} documents are not inserted. Maybe these documents are invalid as a BSON."
         forget_collection(collection)

@@ -36,9 +36,9 @@ class MongoOutputTest < ::Test::Unit::TestCase
     ]
   end
 
-  def setup_mongod
+  def setup_mongod(database = database_name)
     options = {}
-    options[:database] = database_name
+    options[:database] = database
     @client = ::Mongo::Client.new(["localhost:#{port}"], options)
   end
 
@@ -204,6 +204,35 @@ class MongoOutputTest < ::Test::Unit::TestCase
         emit_documents(d)
       end
       actual_documents = get_documents(@tag)
+      time = event_time("2011-01-02 13:14:15 UTC")
+      expected = [{'a' => 1, d.instance.inject_config.time_key => Time.at(time).localtime},
+                  {'a' => 2, d.instance.inject_config.time_key => Time.at(time).localtime}]
+      assert_equal(expected, actual_documents)
+    end
+  end
+
+  class WriteWithDatabasePlaceholder < self
+    def setup
+      @tag = 'custom'
+      setup_mongod(@tag)
+    end
+
+    def teardown
+      teardown_mongod
+    end
+
+    def test_write_with_database_placeholder
+      d = create_driver(%[
+        @type mongo
+        database ${tag}
+        collection #{collection_name}
+        include_time_key true
+      ])
+      d.run(default_tag: @tag) do
+        emit_documents(d)
+      end
+
+      actual_documents = get_documents
       time = event_time("2011-01-02 13:14:15 UTC")
       expected = [{'a' => 1, d.instance.inject_config.time_key => Time.at(time).localtime},
                   {'a' => 2, d.instance.inject_config.time_key => Time.at(time).localtime}]
