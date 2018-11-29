@@ -58,6 +58,30 @@ Use _mongo_ type in match.
 
 For _connection_string_ parameter, see https://docs.mongodb.com/manual/reference/connection-string/ article for more detail.
 
+===== built-in placeholders
+
+fluent-plugin-mongo support built-in placeholders.
+_database_ and _collection_ parameters can handle them.
+
+Here is an example to use built-in placeholders:
+
+    <match mongo.**>
+      @type mongo
+
+      database ${tag[0]}
+
+      # collection name to insert
+      collection ${tag[1]}-%Y%m%d
+
+      # Other buffer configurations here
+      <buffer tag, time>
+        @type memory
+        timekey 3600
+      </buffer>
+    </match>
+
+In more detail, please refer to the officilal document for built-in placeholders: https://docs.fluentd.org/v1.0/articles/buffer-section#placeholders
+
 === mongo(tag mapped mode)
 
 Tag mapped to MongoDB collection automatically.
