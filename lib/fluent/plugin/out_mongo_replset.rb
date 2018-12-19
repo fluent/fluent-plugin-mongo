@@ -35,9 +35,9 @@ module Fluent::Plugin
 
     private
 
-    def operate(client, records)
+    def operate(database, client, records)
       rescue_connection_failure do
-        super(client, records)
+        super(database, client, records)
       end
     end
 
