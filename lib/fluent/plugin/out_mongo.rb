@@ -172,8 +172,8 @@ module Fluent::Plugin
     end
 
     def write(chunk)
-      collection_name = extract_placeholders(@collection, chunk.metadata)
-      database_name = extract_placeholders(@database, chunk.metadata)
+      collection_name = extract_placeholders(@collection, chunk)
+      database_name = extract_placeholders(@database, chunk)
       operate(database_name, format_collection_name(collection_name), collect_records(chunk))
     end
 
