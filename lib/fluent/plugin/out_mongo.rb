@@ -173,7 +173,8 @@ module Fluent::Plugin
 
     def write(chunk)
       collection_name = extract_placeholders(@collection, chunk)
-      database_name = extract_placeholders(@database, chunk)
+      # In connection_string case, we shouldn't handle extract_placeholers for @database.
+      database_name = extract_placeholders(@database, chunk) unless @connection_string
       operate(database_name, format_collection_name(collection_name), collect_records(chunk))
     end
 
