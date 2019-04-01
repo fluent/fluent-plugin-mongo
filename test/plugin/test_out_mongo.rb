@@ -183,6 +183,27 @@ class MongoOutputTest < ::Test::Unit::TestCase
     assert_equal(expected, actual_documents)
   end
 
+  def test_write_with_connection_string
+    d = create_driver(%[
+      @type mongo
+      connection_string mongodb://localhost:#{port}/#{database_name}
+      collection #{collection_name}
+      capped
+      capped_size 100
+    ])
+    assert_equal("mongodb://localhost:#{port}/#{database_name}", d.instance.connection_string)
+    assert_nil d.instance.database
+
+    d.run(default_tag: 'test') do
+      emit_documents(d)
+    end
+    actual_documents = get_documents
+    time = event_time("2011-01-02 13:14:15 UTC")
+    expected = [{'a' => 1, d.instance.inject_config.time_key => Time.at(time).localtime},
+                {'a' => 2, d.instance.inject_config.time_key => Time.at(time).localtime}]
+    assert_equal(expected, actual_documents)
+  end
+
   class WriteWithCollectionPlaceholder < self
     def setup
       @tag = 'custom'
