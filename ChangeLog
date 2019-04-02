@@ -1,3 +1,7 @@
+Release 1.2.2 - 2019/04/01
+
+	* out_mongo: Don't handle database placholders when specifying connection_string parameter
+
 Release 1.2.1 - 2018/12/18
 
 	* out_mongo_replset: Fix internal signature mismatch
