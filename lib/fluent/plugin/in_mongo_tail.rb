@@ -118,10 +118,10 @@ module Fluent::Plugin
     private
 
     def client
-      @client_options[:database] = @database
+      @client_options[:database] = @database if @database
       @client_options[:user] = @user if @user
       @client_options[:password] = @password if @password
-      Mongo::Client.new(["#{node_string}"], @client_options)
+      Mongo::Client.new(node_string, @client_options)
     end
 
     def get_collection
@@ -133,7 +133,7 @@ module Fluent::Plugin
     def node_string
       case
       when @database
-        "#{@host}:#{@port}"
+        ["#{@host}:#{@port}"]
       when @url
         @url
       end
