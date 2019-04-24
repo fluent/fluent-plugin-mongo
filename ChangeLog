@@ -1,3 +1,8 @@
+Release 1.3.0 - 2019/04/24
+
+	* out_mongo: Support auth_mech parameter to allow other authentication
+	* in_mongo_tail: Fix replicat set issue
+
 Release 1.2.2 - 2019/04/01
 
 	* out_mongo: Don't handle database placholders when specifying connection_string parameter
