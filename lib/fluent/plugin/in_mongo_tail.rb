@@ -135,7 +135,7 @@ module Fluent::Plugin
       when @database
         ["#{@host}:#{@port}"]
       when @url
-        "#{@url}"
+        @url
       end
     end
 
