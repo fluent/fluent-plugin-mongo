@@ -92,6 +92,22 @@ class MongoOutputTest < ::Test::Unit::TestCase
     end
   end
 
+  def test_configure_auth_mechanism
+    Mongo::Auth::SOURCES.each do |key, value|
+      conf = default_config + %[
+        auth_mech #{key}
+      ]
+      d = create_driver(conf)
+      assert_equal(key.to_s, d.instance.auth_mech)
+    end
+    assert_raise Fluent::ConfigError do
+      conf = default_config + %[
+        auth_mech invalid
+      ]
+      d = create_driver(conf)
+    end
+  end
+
   def test_configure_with_ssl
     conf = default_config + %[
       ssl true

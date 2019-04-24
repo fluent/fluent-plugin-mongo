@@ -108,6 +108,10 @@ module Fluent::Plugin
 
       super
 
+      if @auth_mech && !Mongo::Auth::SOURCES.has_key?(@auth_mech.to_sym)
+        raise Fluent::ConfigError, Mongo::Auth::InvalidMechanism.new(@auth_mech.to_sym)
+      end
+
       if @connection_string.nil? && @database.nil?
         raise Fluent::ConfigError,  "connection_string or database parameter is required"
       end
