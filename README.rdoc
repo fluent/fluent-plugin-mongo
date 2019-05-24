@@ -80,7 +80,7 @@ Here is an example to use built-in placeholders:
       </buffer>
     </match>
 
-In more detail, please refer to the officilal document for built-in placeholders: https://docs.fluentd.org/v1.0/articles/buffer-section#placeholders
+In more detail, please refer to the officilal document for built-in placeholders: https://docs.fluentd.org/configuration/buffer-section#placeholders
 
 === mongo(tag mapped mode)
 
