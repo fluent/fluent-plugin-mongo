@@ -38,6 +38,9 @@ module Fluent::Plugin
     desc "Replace dollar with specified string"
     config_param :replace_dollar_in_key_with, :string, default: nil
 
+    # Additional date field to be parsed to Date object
+    config_param :parse_date_key, :string
+
     # tag mapping mode
     desc "Use tag_mapped mode"
     config_param :tag_mapped, :bool, default: false,
@@ -53,6 +56,7 @@ module Fluent::Plugin
     config_param :ssl_key_pass_phrase, :string, default: nil, secret: true
     config_param :ssl_verify, :bool, default: false
     config_param :ssl_ca_cert, :string, default: nil
+
 
     config_section :buffer do
       config_set_default :@type, DEFAULT_BUFFER_TYPE
@@ -198,11 +202,24 @@ module Fluent::Plugin
     def collect_records(chunk)
       records = []
       time_key = @inject_config.time_key if @inject_config
+      date_key = @parse_date_key if @parse_date_key
+
+
       tag = chunk.metadata.tag
       chunk.msgpack_each {|time, record|
         record = inject_values_to_record(tag, time, record)
         # MongoDB uses BSON's Date for time.
         record[time_key] = Time.at(time || record[time_key]) if time_key
+        begin
+          if record[date_key].is_a? Integer
+             record[date_key] = Time.at(record[date_key] / 1000.0)
+          else
+            record[date_key] = Time.parse record[date_key] if record[date_key]
+          end
+        rescue ArgumentError
+          log.error "Failed to parse field #{@parse_date_key}. Expected valid date string value: #{record[@parse_date_key]}"
+          record[date_key] = nil
+        end
         records << record
       }
       records
