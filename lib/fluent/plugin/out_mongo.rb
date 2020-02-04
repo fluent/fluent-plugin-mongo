@@ -39,7 +39,7 @@ module Fluent::Plugin
     config_param :replace_dollar_in_key_with, :string, default: nil
 
     # Additional date field to be parsed to Date object
-    config_param :parse_date_key, :string
+    config_param :parse_date_key, :string, default: nil
 
     # tag mapping mode
     desc "Use tag_mapped mode"
@@ -210,15 +210,18 @@ module Fluent::Plugin
         record = inject_values_to_record(tag, time, record)
         # MongoDB uses BSON's Date for time.
         record[time_key] = Time.at(time || record[time_key]) if time_key
-        begin
-          if record[date_key].is_a? Integer
-             record[date_key] = Time.at(record[date_key] / 1000.0)
-          else
-            record[date_key] = Time.parse record[date_key] if record[date_key]
+
+        if date_key
+          begin
+            if record[date_key].is_a? Integer
+              record[date_key] = Time.at(record[date_key] / 1000.0)
+            else
+              record[date_key] = Time.parse record[date_key] if record[date_key]
+            end
+          rescue ArgumentError
+            log.error "Failed to parse field #{@parse_date_key}. Expected valid date string value: #{record[@parse_date_key]}"
+            record[date_key] = nil
           end
-        rescue ArgumentError
-          log.error "Failed to parse field #{@parse_date_key}. Expected valid date string value: #{record[@parse_date_key]}"
-          record[date_key] = nil
         end
         records << record
       }
