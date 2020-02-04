@@ -53,7 +53,7 @@ Use _mongo_ type in match.
       capped
       capped_size 100m
 
-      # Parse date string in record to date object (Optional)
+      # Parse date string in record to date object (Optional) default: nil
       # data should contain provided key with date string or javascript timestamp value
       # eg: updated_at: "2020-02-01T08:22:23.780Z" or updated_at: 1580546457010
       # NOTE: for ruby based timestamp set field = value * 1000
