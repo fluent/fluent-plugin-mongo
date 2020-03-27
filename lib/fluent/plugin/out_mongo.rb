@@ -219,7 +219,7 @@ module Fluent::Plugin
               record[date_key] = Time.parse record[date_key] if record[date_key]
             end
           rescue ArgumentError
-            log.error "Failed to parse field #{@parse_date_key}. Expected valid date string value: #{record[@parse_date_key]}"
+            log.warn "Failed to parse field #{@parse_date_key}. Expected valid date integer/string value: #{record[@parse_date_key]}"
             record[date_key] = nil
           end
         end
