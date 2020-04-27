@@ -1,9 +1,8 @@
 rvm:
- - 2.1
- - 2.2.4
- - 2.3.1
- - 2.4.3
- - 2.5.0
+ - 2.4.10
+ - 2.5
+ - 2.6
+ - 2.7
  - ruby-head
 
 gemfile:
@@ -11,12 +10,6 @@ gemfile:
 
 services:
   - mongodb
-
-before_install:
-  - gem update --system=2.7.8
-
-before_script:
-  - git submodule update -i
 
 script: bundle exec rake test
 
