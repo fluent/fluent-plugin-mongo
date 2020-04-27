@@ -315,7 +315,7 @@ class MongoOutputTest < ::Test::Unit::TestCase
             "$foo$bar" => "baz"
           }
         ],
-             })
+      })
     end
 
     documents = get_documents
@@ -386,6 +386,47 @@ class MongoOutputTest < ::Test::Unit::TestCase
       ])
 
       assert authenticate(@client)
+    end
+  end
+
+  def emit_date_documents(d)
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.feed(time, {'a' => 1, updated_at: "2020-02-01T08:22:23.780Z"})
+    time
+  end
+
+  def emit_invalid_date_documents(d)
+    time = event_time("2011-01-02 13:14:15 UTC")
+    d.feed(time, {'a' => 1, updated_at: "Invalid Date String"})
+    time
+  end
+
+  def test_write_with_parsed_date_key_set
+    d = create_driver(default_config + %[
+      parse_date_key updated_at
+      time_key created_at
+    ])
+
+    d.run(default_tag: 'test') do
+      emit_date_documents(d)
+    end
+
+    date_key = d.instance.parse_date_key
+    actual_documents = get_documents
+    time = event_time("2011-01-02 13:14:15 UTC")
+
+    expected = [ { 'a' => 1, d.instance.inject_config.time_key => Time.at(time), d.instance.parse_date_key => Time.parse("2020-02-01T08:22:23.780Z")}]
+    assert_equal(expected, actual_documents)
+  end
+
+  def test_write_with_parsed_date_key_invalid_string
+    d = create_driver(default_config + %[
+      parse_date_key updated_at
+      time_key created_at
+    ])
+
+    assert_raise ArgumentError do
+      emit_date_documents(d)
     end
   end
 end
