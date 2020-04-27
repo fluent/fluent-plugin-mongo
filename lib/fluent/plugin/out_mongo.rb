@@ -38,8 +38,9 @@ module Fluent::Plugin
     desc "Replace dollar with specified string"
     config_param :replace_dollar_in_key_with, :string, default: nil
 
-    # Additional date field to be parsed to Date object
-    config_param :parse_date_key, :string, default: nil
+    # Additional date field to be used to Date object
+    desc "Specify keys to use MongoDB's Date. Supported value types are Integer/Float/EventTime/String"
+    config_param :date_keys, :array, default: nil
 
     # tag mapping mode
     desc "Use tag_mapped mode"
@@ -202,8 +203,7 @@ module Fluent::Plugin
     def collect_records(chunk)
       records = []
       time_key = @inject_config.time_key if @inject_config
-      date_key = @parse_date_key if @parse_date_key
-
+      date_keys = @date_keys
 
       tag = chunk.metadata.tag
       chunk.msgpack_each {|time, record|
@@ -211,17 +211,31 @@ module Fluent::Plugin
         # MongoDB uses BSON's Date for time.
         record[time_key] = Time.at(time || record[time_key]) if time_key
 
-        if date_key
-          begin
-            if record[date_key].is_a? Integer
-              record[date_key] = Time.at(record[date_key] / 1000.0)
-            else
-              record[date_key] = Time.parse record[date_key] if record[date_key]
+        if date_keys
+          date_keys.each { |date_key|
+            begin
+              date_value = record[date_key]
+              case date_value
+              when Fluent::EventTime
+                record[date_key] = date_value.to_time
+              when Integer
+                record[date_key] = if date_value > 9999999999
+                                     # epoch with milliseconds: e.g. javascript
+                                     Time.at(date_value / 1000.0)
+                                   else
+                                     # epoch with seconds: e.g. ruby
+                                     Time.at(date_value)
+                                   end
+              when Float
+                record[date_key] = Time.at(date_value)
+              else
+                record[date_key] = Time.parse(date_value)
+              end
+            rescue ArgumentError
+              log.warn "Failed to parse '#{date_key}' field. Expected date types are Integer/Float/String/EventTime: #{record[date_key]}"
+              record[date_key] = nil
             end
-          rescue ArgumentError
-            log.warn "Failed to parse field #{@parse_date_key}. Expected valid date integer/string value: #{record[@parse_date_key]}"
-            record[date_key] = nil
-          end
+          }
         end
         records << record
       }
