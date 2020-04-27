@@ -100,7 +100,7 @@ class MongoTailInputTest < Test::Unit::TestCase
       end
       events = d.events
       assert_equal "input.mongo", events[0][0]
-      assert_equal event_time(@time.to_s), events[0][1]
+      assert events[0][1].is_a?(Fluent::EventTime)
       assert_equal "test", events[0][2]["message"]
     end
 
@@ -138,7 +138,7 @@ class MongoTailInputTest < Test::Unit::TestCase
       events = d.events
       assert_equal 1, events.size
       assert_equal "input.mongo.last_id", events[0][0]
-      assert_equal event_time(@time.to_s), events[0][1]
+      assert events[0][1].is_a?(Fluent::EventTime)
       assert_equal "can obtain", events[0][2]["message"]
     end
   end
