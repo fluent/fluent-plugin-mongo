@@ -389,44 +389,55 @@ class MongoOutputTest < ::Test::Unit::TestCase
     end
   end
 
-  def emit_date_documents(d)
-    time = event_time("2011-01-02 13:14:15 UTC")
-    d.feed(time, {'a' => 1, updated_at: "2020-02-01T08:22:23.780Z"})
-    time
-  end
-
-  def emit_invalid_date_documents(d)
-    time = event_time("2011-01-02 13:14:15 UTC")
-    d.feed(time, {'a' => 1, updated_at: "Invalid Date String"})
-    time
-  end
-
-  def test_write_with_parsed_date_key_set
-    d = create_driver(default_config + %[
-      parse_date_key updated_at
-      time_key created_at
-    ])
-
-    d.run(default_tag: 'test') do
-      emit_date_documents(d)
+  sub_test_case 'date_keys' do
+    setup do
+      @updated_at_str = "2020-02-01T08:22:23.780Z"
+      @updated_at_t = Time.parse(@updated_at_str)
     end
 
-    date_key = d.instance.parse_date_key
-    actual_documents = get_documents
-    time = event_time("2011-01-02 13:14:15 UTC")
+    def emit_date_documents(d)
+      time = event_time("2011-01-02 13:14:15 UTC")
+      d.feed(time, {'a' => 1, updated_at: @updated_at_str})
+      d.feed(time, {'a' => 2, updated_at: @updated_at_t.to_f})
+      d.feed(time, {'a' => 3, updated_at: @updated_at_t.to_i})
+      time
+    end
 
-    expected = [ { 'a' => 1, d.instance.inject_config.time_key => Time.at(time), d.instance.parse_date_key => Time.parse("2020-02-01T08:22:23.780Z")}]
-    assert_equal(expected, actual_documents)
-  end
+    def emit_invalid_date_documents(d)
+      time = event_time("2011-01-02 13:14:15 UTC")
+      d.feed(time, {'a' => 1, updated_at: "Invalid Date String"})
+      time
+    end
 
-  def test_write_with_parsed_date_key_invalid_string
-    d = create_driver(default_config + %[
-      parse_date_key updated_at
-      time_key created_at
-    ])
+    def test_write_with_date_keys
+      d = create_driver(default_config + %[
+        date_keys updated_at
+        time_key created_at
+      ])
 
-    assert_raise ArgumentError do
-      emit_date_documents(d)
+      d.run(default_tag: 'test') do
+        emit_date_documents(d)
+      end
+
+      actual_documents = get_documents
+      date_key = d.instance.date_keys.first
+      actual_documents.each_with_index { |doc, i|
+        assert_equal(i + 1, doc['a'])
+        assert doc[date_key].is_a?(Time)
+      }
+    end
+
+    def test_write_with_parsed_date_key_invalid_string
+      d = create_driver(default_config + %[
+            date_keys updated_at
+            time_key created_at
+          ])
+
+      d.run(default_tag: 'test') do
+        emit_invalid_date_documents(d)
+      end
+      actual_documents = get_documents
+      assert_nil actual_documents.first['updated_at']
     end
   end
 end
