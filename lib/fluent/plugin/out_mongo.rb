@@ -121,10 +121,6 @@ module Fluent::Plugin
         raise Fluent::ConfigError,  "connection_string or database parameter is required"
       end
 
-      unless @ignore_invalid_record
-        log.warn "Since v0.8, invalid record detection will be removed because mongo driver v2.x and API spec don't provide it. You may lose invalid records, so you should not send such records to mongo plugin"
-      end
-
       if conf.has_key?('tag_mapped')
         log.warn "'tag_mapped' feature is replaced with built-in config placeholder. Please consider to use 'collection ${tag}'."
         @collection = '${tag}'
