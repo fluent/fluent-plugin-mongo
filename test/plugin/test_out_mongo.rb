@@ -180,6 +180,10 @@ class MongoOutputTest < ::Test::Unit::TestCase
     @client[collection].find.to_a.map {|e| e.delete('_id'); e}
   end
 
+  def get_indexes(collection = collection_name)
+    @client[collection].indexes
+  end
+
   def emit_documents(d)
     time = event_time("2011-01-02 13:14:15 UTC")
     d.feed(time, {'a' => 1})
@@ -218,6 +222,31 @@ class MongoOutputTest < ::Test::Unit::TestCase
     expected = [{'a' => 1, d.instance.inject_config.time_key => Time.at(time).localtime},
                 {'a' => 2, d.instance.inject_config.time_key => Time.at(time).localtime}]
     assert_equal(expected, actual_documents)
+  end
+
+  def test_write_with_expire_index
+    d = create_driver(%[
+      @type mongo
+      connection_string mongodb://localhost:#{port}/#{database_name}
+      collection #{collection_name}
+      capped
+      capped_size 100
+      expire_after 120
+    ])
+    assert_equal("mongodb://localhost:#{port}/#{database_name}", d.instance.connection_string)
+    assert_nil d.instance.database
+        d.run(default_tag: 'test') do
+      emit_documents(d)
+    end
+    actual_documents = get_documents
+    time = event_time("2011-01-02 13:14:15 UTC")
+    expected = [{'a' => 1, d.instance.inject_config.time_key => Time.at(time).localtime},
+                {'a' => 2, d.instance.inject_config.time_key => Time.at(time).localtime}]
+    assert_equal(expected, actual_documents)
+
+    indexes = get_indexes()
+    expire_after_hash = indexes.map {|e| e.select{|k, v| k == "expireAfterSeconds"} }.reject{|e| e.empty?}.first
+    assert_equal({"expireAfterSeconds"=>120.0}, expire_after_hash)
   end
 
   class WriteWithCollectionPlaceholder < self

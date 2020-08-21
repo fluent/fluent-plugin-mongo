@@ -49,6 +49,9 @@ module Fluent::Plugin
     desc "Remove tag prefix"
     config_param :remove_tag_prefix, :string, default: nil,
                  deprecated: "use @label instead for event routing."
+    # expire indexes
+    desc "Specify expire after seconds"
+    config_param :expire_after, :time, default: 0
 
     # SSL connection
     config_param :ssl, :bool, default: false
@@ -270,6 +273,13 @@ module Fluent::Plugin
       unless collection_exists?(name)
         log.trace "Create collection #{name} with options #{options}"
         @client[name, options].create
+        if @expire_after > 0 && @inject_config
+          log.trace "Create expiring index with key: \"#{@inject_config.time_key}\" and seconds: \"#{@expire_after}\""
+          @client[name].indexes.create_one(
+            {"#{@inject_config.time_key}": 1},
+            expire_after: @expire_after
+          )
+        end
       end
       @collections[name] = true
       @client[name]
