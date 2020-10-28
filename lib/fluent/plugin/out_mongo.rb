@@ -213,12 +213,13 @@ module Fluent::Plugin
         if date_keys
           date_keys.each { |date_key|
             begin
-              date_value = record[date_key]
+              path = date_key.split('.')
+              date_value = record.dig(*path)
               case date_value
               when Fluent::EventTime
-                record[date_key] = date_value.to_time
+                value_to_set = date_value.to_time
               when Integer
-                record[date_key] = if date_value > 9999999999
+                value_to_set = if date_value > 9999999999
                                      # epoch with milliseconds: e.g. javascript
                                      Time.at(date_value / 1000.0)
                                    else
@@ -226,10 +227,16 @@ module Fluent::Plugin
                                      Time.at(date_value)
                                    end
               when Float
-                record[date_key] = Time.at(date_value)
+                value_to_set = Time.at(date_value)
               else
-                record[date_key] = Time.parse(date_value)
+                value_to_set = Time.parse(date_value)
               end
+              tmp_record = record
+              (0..path.length - 2).each { |current_path|
+                tmp_record = tmp_record[path[current_path]]
+              }
+
+              tmp_record[path[path.length - 1]] = value_to_set
             rescue ArgumentError
               log.warn "Failed to parse '#{date_key}' field. Expected date types are Integer/Float/String/EventTime: #{record[date_key]}"
               record[date_key] = nil
