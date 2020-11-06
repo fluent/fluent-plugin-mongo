@@ -3,12 +3,13 @@ require 'msgpack'
 require 'fluent/plugin/output'
 require 'fluent/plugin/mongo_auth'
 require 'fluent/plugin/logger_support'
+require 'fluent/plugin/filter'
 
 module Fluent::Plugin
   class MongoOutput < Output
     Fluent::Plugin.register_output('mongo', self)
 
-    helpers :event_emitter, :inject, :compat_parameters
+    helpers :event_emitter, :inject, :compat_parameters, :record_accessor
 
     include Fluent::MongoAuthParams
     include Fluent::MongoAuth
@@ -213,8 +214,13 @@ module Fluent::Plugin
         if date_keys
           date_keys.each { |date_key|
             begin
-              path = date_key.split('.')
-              date_value = record.dig(*path)
+              date_key_accessor = record_accessor_create(date_key)
+              date_value = date_key_accessor.call(record)
+              if date_value.to_i.to_s == date_value
+                date_value = date_value.to_i
+              elsif date_value.to_f.to_s == date_value
+                date_value = date_value.to_f
+              end
               case date_value
               when Fluent::EventTime
                 value_to_set = date_value.to_time
@@ -231,12 +237,7 @@ module Fluent::Plugin
               else
                 value_to_set = Time.parse(date_value)
               end
-              tmp_record = record
-              (0..path.length - 2).each { |current_path|
-                tmp_record = tmp_record[path[current_path]]
-              }
-
-              tmp_record[path[path.length - 1]] = value_to_set
+              date_key_accessor.set(record, value_to_set)
             rescue ArgumentError
               log.warn "Failed to parse '#{date_key}' field. Expected date types are Integer/Float/String/EventTime: #{record[date_key]}"
               record[date_key] = nil
