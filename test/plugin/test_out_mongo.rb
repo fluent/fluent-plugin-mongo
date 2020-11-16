@@ -448,7 +448,7 @@ class MongoOutputTest < ::Test::Unit::TestCase
 
     def emit_nested_invalid_date_documents(d)
       time = event_time("2011-01-02 13:14:15 UTC")
-      d.feed(time, {'a' => 1, updated_at: { 'time': "Invalid Date String"}})
+      d.feed(time, {'a' => 1, 'updated_at': { 'time': "Invalid Date String"}})
       time
     end
 
@@ -485,6 +485,7 @@ class MongoOutputTest < ::Test::Unit::TestCase
 
     def test_write_with_date_nested_keys
       d = create_driver(default_config + %[
+        replace_dot_in_key_with _
         replace_dollar_in_key_with _
         date_keys $.updated_at.time
         time_key created_at
@@ -503,6 +504,7 @@ class MongoOutputTest < ::Test::Unit::TestCase
 
     def test_write_with_parsed_date_nested_key_invalid_string
       d = create_driver(default_config + %[
+            replace_dot_in_key_with _
             replace_dollar_in_key_with _
             date_keys $.updated_at.time
             time_key created_at

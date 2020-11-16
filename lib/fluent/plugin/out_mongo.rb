@@ -75,6 +75,7 @@ module Fluent::Plugin
       @nodes = nil
       @client_options = {}
       @collection_options = {capped: false}
+      @accessors = {}
     end
 
     # Following limits are heuristic. BSON is sometimes bigger than MessagePack and JSON.
@@ -158,8 +159,7 @@ module Fluent::Plugin
 
       log.debug "Setup mongo configuration: mode = #{@tag_mapped ? 'tag mapped' : 'normal'}"
 
-      @accessors = {}
-      @date_keys.each { |field_name|
+      (@date_keys || []).each { |field_name|
         @accessors[field_name.to_s] = record_accessor_create(field_name)
       }
       log.debug "Setup record accessor for every date key"
@@ -245,7 +245,7 @@ module Fluent::Plugin
               date_key_accessor.set(record, value_to_set)
             rescue ArgumentError
               log.warn "Failed to parse '#{date_key}' field. Expected date types are Integer/Float/String/EventTime: #{record[date_key]}"
-              record[date_key] = nil
+              date_key_accessor.set(record, nil)
             end
           }
         end
