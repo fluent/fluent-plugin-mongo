@@ -157,6 +157,12 @@ module Fluent::Plugin
       configure_logger(@mongo_log_level)
 
       log.debug "Setup mongo configuration: mode = #{@tag_mapped ? 'tag mapped' : 'normal'}"
+
+      @accessors = {}
+      @date_keys.each { |field_name|
+        @accessors[field_name.to_s] = record_accessor_create(field_name)
+      }
+      log.debug "Setup record accessor for every date key"
     end
 
     def start
@@ -213,7 +219,7 @@ module Fluent::Plugin
         if date_keys
           date_keys.each { |date_key|
             begin
-              date_key_accessor = record_accessor_create(date_key)
+              date_key_accessor = @accessors[date_key.to_s]
               date_value = date_key_accessor.call(record)
               if date_value.to_i.to_s == date_value
                 date_value = date_value.to_i
