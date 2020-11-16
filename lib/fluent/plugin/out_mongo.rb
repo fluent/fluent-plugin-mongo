@@ -3,7 +3,6 @@ require 'msgpack'
 require 'fluent/plugin/output'
 require 'fluent/plugin/mongo_auth'
 require 'fluent/plugin/logger_support'
-require 'fluent/plugin/filter'
 
 module Fluent::Plugin
   class MongoOutput < Output
