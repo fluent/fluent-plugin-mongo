@@ -41,6 +41,9 @@ module Fluent::Plugin
     # Additional date field to be used to Date object
     desc "Specify keys to use MongoDB's Date. Supported value types are Integer/Float/EventTime/String"
     config_param :date_keys, :array, default: nil
+    desc "Specify if the fields in date_keys are of type Integer or Float"
+    config_param :parse_string_number_date, :bool, default: false
+
 
     # tag mapping mode
     desc "Use tag_mapped mode"
@@ -222,27 +225,24 @@ module Fluent::Plugin
           @accessors.each_pair { |date_key, date_key_accessor|
             begin
               date_value = date_key_accessor.call(record)
-              if date_value.to_i.to_s == date_value
-                date_value = date_value.to_i
-              elsif date_value.to_f.to_s == date_value
-                date_value = date_value.to_f
-              end
-              case date_value
-              when Fluent::EventTime
-                value_to_set = date_value.to_time
-              when Integer
-                value_to_set = if date_value > 9999999999
-                                     # epoch with milliseconds: e.g. javascript
-                                     Time.at(date_value / 1000.0)
-                                   else
-                                     # epoch with seconds: e.g. ruby
-                                     Time.at(date_value)
-                                   end
-              when Float
-                value_to_set = Time.at(date_value)
+              if @parse_string_number_date
+                if date_value.to_i.to_s == date_value
+                  date_value = date_value.to_i
+                  value_to_set =  if date_value > 9999999999
+                                    # epoch with milliseconds: e.g. javascript
+                                    date_value / 1000.0
+                                  else
+                                    # epoch with seconds: e.g. ruby
+                                    date_value
+                                  end
+                elsif date_value.to_f.to_s == date_value
+                  date_value = date_value.to_f
+                end
+                value_to_set = date_value.is_a?(String) ? Time.parse(date_value) : Time.at(date_value)
               else
                 value_to_set = Time.parse(date_value)
               end
+
               date_key_accessor.set(record, value_to_set)
             rescue ArgumentError
               log.warn "Failed to parse '#{date_key}' field. Expected date types are Integer/Float/String/EventTime: #{record[date_key]}"
