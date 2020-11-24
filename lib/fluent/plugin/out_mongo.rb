@@ -245,7 +245,7 @@ module Fluent::Plugin
 
               date_key_accessor.set(record, value_to_set)
             rescue ArgumentError
-              log.warn "Failed to parse '#{date_key}' field. Expected date types are Integer/Float/String/EventTime: #{record[date_key]}"
+              log.warn "Failed to parse '#{date_key}' field. Expected date types are Integer/Float/String/EventTime: #{date_value}"
               date_key_accessor.set(record, nil)
             end
           }
