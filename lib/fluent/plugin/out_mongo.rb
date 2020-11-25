@@ -8,7 +8,7 @@ module Fluent::Plugin
   class MongoOutput < Output
     Fluent::Plugin.register_output('mongo', self)
 
-    helpers :event_emitter, :inject, :compat_parameters
+    helpers :event_emitter, :inject, :compat_parameters, :record_accessor
 
     include Fluent::MongoAuthParams
     include Fluent::MongoAuth
@@ -41,6 +41,9 @@ module Fluent::Plugin
     # Additional date field to be used to Date object
     desc "Specify keys to use MongoDB's Date. Supported value types are Integer/Float/EventTime/String"
     config_param :date_keys, :array, default: nil
+    desc "Specify if the fields in date_keys are of type Integer or Float"
+    config_param :parse_string_number_date, :bool, default: false
+
 
     # tag mapping mode
     desc "Use tag_mapped mode"
@@ -75,6 +78,7 @@ module Fluent::Plugin
       @nodes = nil
       @client_options = {}
       @collection_options = {capped: false}
+      @accessors = {}
     end
 
     # Following limits are heuristic. BSON is sometimes bigger than MessagePack and JSON.
@@ -157,6 +161,13 @@ module Fluent::Plugin
       configure_logger(@mongo_log_level)
 
       log.debug "Setup mongo configuration: mode = #{@tag_mapped ? 'tag mapped' : 'normal'}"
+
+      if @date_keys
+        @date_keys.each { |field_name|
+          @accessors[field_name.to_s] = record_accessor_create(field_name)
+        }
+        log.debug "Setup record accessor for every date key"
+      end
     end
 
     def start
@@ -211,28 +222,31 @@ module Fluent::Plugin
         record[time_key] = Time.at(time || record[time_key]) if time_key
 
         if date_keys
-          date_keys.each { |date_key|
+          @accessors.each_pair { |date_key, date_key_accessor|
             begin
-              date_value = record[date_key]
-              case date_value
-              when Fluent::EventTime
-                record[date_key] = date_value.to_time
-              when Integer
-                record[date_key] = if date_value > 9999999999
-                                     # epoch with milliseconds: e.g. javascript
-                                     Time.at(date_value / 1000.0)
-                                   else
-                                     # epoch with seconds: e.g. ruby
-                                     Time.at(date_value)
-                                   end
-              when Float
-                record[date_key] = Time.at(date_value)
+              date_value = date_key_accessor.call(record)
+              if @parse_string_number_date
+                if date_value.to_i.to_s == date_value
+                  date_value = date_value.to_i
+                  value_to_set =  if date_value > 9999999999
+                                    # epoch with milliseconds: e.g. javascript
+                                    date_value / 1000.0
+                                  else
+                                    # epoch with seconds: e.g. ruby
+                                    date_value
+                                  end
+                elsif date_value.to_f.to_s == date_value
+                  date_value = date_value.to_f
+                end
+                value_to_set = date_value.is_a?(String) ? Time.parse(date_value) : Time.at(date_value)
               else
-                record[date_key] = Time.parse(date_value)
+                value_to_set = Time.parse(date_value)
               end
+
+              date_key_accessor.set(record, value_to_set)
             rescue ArgumentError
-              log.warn "Failed to parse '#{date_key}' field. Expected date types are Integer/Float/String/EventTime: #{record[date_key]}"
-              record[date_key] = nil
+              log.warn "Failed to parse '#{date_key}' field. Expected date types are Integer/Float/String/EventTime: #{date_value}"
+              date_key_accessor.set(record, nil)
             end
           }
         end

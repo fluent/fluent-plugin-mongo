@@ -438,6 +438,20 @@ class MongoOutputTest < ::Test::Unit::TestCase
       time
     end
 
+    def emit_nested_date_documents(d)
+      time = event_time("2011-01-02 13:14:15 UTC")
+      d.feed(time, {'a' => 1, updated_at: { 'time': @updated_at_str}})
+      d.feed(time, {'a' => 2, updated_at: { 'time': @updated_at_t.to_f}})
+      d.feed(time, {'a' => 3, updated_at: { 'time': @updated_at_t.to_i}})
+      time
+    end
+
+    def emit_nested_invalid_date_documents(d)
+      time = event_time("2011-01-02 13:14:15 UTC")
+      d.feed(time, {'a' => 1, 'updated_at': { 'time': "Invalid Date String"}})
+      time
+    end
+
     def test_write_with_date_keys
       d = create_driver(default_config + %[
         date_keys updated_at
@@ -467,6 +481,40 @@ class MongoOutputTest < ::Test::Unit::TestCase
       end
       actual_documents = get_documents
       assert_nil actual_documents.first['updated_at']
+    end
+
+    def test_write_with_date_nested_keys
+      d = create_driver(default_config + %[
+        replace_dot_in_key_with _
+        replace_dollar_in_key_with _
+        date_keys $.updated_at.time
+        time_key created_at
+      ])
+
+      d.run(default_tag: 'test') do
+        emit_nested_date_documents(d)
+      end
+
+      actual_documents = get_documents
+      actual_documents.each_with_index { |doc, i|
+        assert_equal(i + 1, doc['a'])
+        assert doc['updated_at']['time'].is_a?(Time)
+      }
+    end
+
+    def test_write_with_parsed_date_nested_key_invalid_string
+      d = create_driver(default_config + %[
+            replace_dot_in_key_with _
+            replace_dollar_in_key_with _
+            date_keys $.updated_at.time
+            time_key created_at
+          ])
+
+      d.run(default_tag: 'test') do
+        emit_nested_invalid_date_documents(d)
+      end
+      actual_documents = get_documents
+      assert_nil actual_documents.first['updated_at']['time']
     end
   end
 end
