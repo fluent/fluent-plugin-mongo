@@ -1,3 +1,7 @@
+Release 1.5.0 - 2020/11/26
+
+	* out_mongo: Support nested fields in date_keys
+
 Release 1.4.1 - 2020/08/21
 
 	* out_mongo: Add expire_after parameter
