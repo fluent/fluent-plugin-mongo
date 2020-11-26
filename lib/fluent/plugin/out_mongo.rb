@@ -225,22 +225,37 @@ module Fluent::Plugin
           @accessors.each_pair { |date_key, date_key_accessor|
             begin
               date_value = date_key_accessor.call(record)
-              if @parse_string_number_date
-                if date_value.to_i.to_s == date_value
-                  date_value = date_value.to_i
-                  value_to_set =  if date_value > 9999999999
-                                    # epoch with milliseconds: e.g. javascript
-                                    date_value / 1000.0
-                                  else
-                                    # epoch with seconds: e.g. ruby
-                                    date_value
-                                  end
-                elsif date_value.to_f.to_s == date_value
-                  date_value = date_value.to_f
-                end
-                value_to_set = date_value.is_a?(String) ? Time.parse(date_value) : Time.at(date_value)
+              case date_value
+              when Fluent::EventTime
+                value_to_set = date_value.to_time
+              when Integer
+                value_to_set = if date_value > 9999999999
+                                 # epoch with milliseconds: e.g. javascript
+                                 Time.at(date_value / 1000.0)
+                               else
+                                 # epoch with seconds: e.g. ruby
+                                 Time.at(date_value)
+                               end
+              when Float
+                value_to_set = Time.at(date_value)
               else
-                value_to_set = Time.parse(date_value)
+                if @parse_string_number_date
+                  if date_value.to_i.to_s == date_value
+                    date_value = date_value.to_i
+                    value_to_set = if date_value > 9999999999
+                                     # epoch with milliseconds: e.g. javascript
+                                     date_value / 1000.0
+                                   else
+                                     # epoch with seconds: e.g. ruby
+                                     date_value
+                                   end
+                  elsif date_value.to_f.to_s == date_value
+                    date_value = date_value.to_f
+                  end
+                  value_to_set = date_value.is_a?(String) ? Time.parse(date_value) : Time.at(date_value)
+                else
+                  value_to_set = Time.parse(date_value)
+                end
               end
 
               date_key_accessor.set(record, value_to_set)
