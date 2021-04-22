@@ -17,10 +17,11 @@ Gem::Specification.new do |gem|
   gem.require_paths = ['lib']
 
   gem.add_dependency "fluentd", [">= 0.14.22", "< 2"]
-  gem.add_runtime_dependency "mongo", "~> 2.6.0"
+  gem.add_runtime_dependency "mongo", "~> 2.13.0"
   gem.add_development_dependency "rake", ">= 0.9.2"
   gem.add_development_dependency "simplecov", ">= 0.5.4"
   gem.add_development_dependency "rr", ">= 1.0.0"
   gem.add_development_dependency "test-unit", ">= 3.0.0"
-  gem.add_development_dependency "timecop", "~> 0.8.0"
+  gem.add_development_dependency "timecop", "~> 0.9.4"
+  gem.add_development_dependency "webrick", ">= 1.7.0"
 end
