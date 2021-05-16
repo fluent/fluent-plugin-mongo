@@ -69,6 +69,8 @@ module Fluent::Plugin
         raise Fluent::ConfigError, "One of 'database' or 'url' must be specified"
       end
 
+      date = Time.now
+      @collection = date.strftime(collection)
       @last_id = @id_store_file ? get_last_id : nil
       @connection_options[:ssl] = @ssl
 
