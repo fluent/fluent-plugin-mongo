@@ -43,7 +43,8 @@ module Fluent::Plugin
     config_param :date_keys, :array, default: nil
     desc "Specify if the fields in date_keys are of type Integer or Float"
     config_param :parse_string_number_date, :bool, default: false
-
+    desc "Specify keys to use MongoDB's ObjectId"
+    config_param :object_id_keys, :array, default: nil
 
     # tag mapping mode
     desc "Use tag_mapped mode"
@@ -78,7 +79,8 @@ module Fluent::Plugin
       @nodes = nil
       @client_options = {}
       @collection_options = {capped: false}
-      @accessors = {}
+      @date_accessors = {}
+      @object_id_accessors = {}
     end
 
     # Following limits are heuristic. BSON is sometimes bigger than MessagePack and JSON.
@@ -164,9 +166,15 @@ module Fluent::Plugin
 
       if @date_keys
         @date_keys.each { |field_name|
-          @accessors[field_name.to_s] = record_accessor_create(field_name)
+          @date_accessors[field_name.to_s] = record_accessor_create(field_name)
         }
         log.debug "Setup record accessor for every date key"
+      end
+      if @object_id_keys
+        @object_id_keys.each { |field_name|
+          @object_id_accessors[field_name.to_s] = record_accessor_create(field_name)
+        }
+        log.debug "Setup record accessor for every object_id key"
       end
     end
 
@@ -214,6 +222,7 @@ module Fluent::Plugin
       records = []
       time_key = @inject_config.time_key if @inject_config
       date_keys = @date_keys
+      object_id_keys = @object_id_keys
 
       tag = chunk.metadata.tag
       chunk.msgpack_each {|time, record|
@@ -222,7 +231,7 @@ module Fluent::Plugin
         record[time_key] = Time.at(time || record[time_key]) if time_key
 
         if date_keys
-          @accessors.each_pair { |date_key, date_key_accessor|
+          @date_accessors.each_pair { |date_key, date_key_accessor|
             begin
               date_value = date_key_accessor.call(record)
               case date_value
@@ -262,6 +271,18 @@ module Fluent::Plugin
             rescue ArgumentError
               log.warn "Failed to parse '#{date_key}' field. Expected date types are Integer/Float/String/EventTime: #{date_value}"
               date_key_accessor.set(record, nil)
+            end
+          }
+        end
+        if object_id_keys
+          @object_id_accessors.each_pair { |object_id_key, object_id_key_accessor|
+            begin
+              object_id_value = object_id_key_accessor.call(record)
+              value_to_set = BSON::ObjectId(object_id_value)
+              object_id_key_accessor.set(record, value_to_set)
+            rescue BSON::ObjectId::Invalid
+              log.warn "Failed to parse '#{object_id_key}' field. Expected object_id types are String: #{object_id_value}"
+              object_id_key_accessor.set(record, nil)
             end
           }
         end
