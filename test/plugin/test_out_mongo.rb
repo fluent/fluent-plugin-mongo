@@ -517,4 +517,95 @@ class MongoOutputTest < ::Test::Unit::TestCase
       assert_nil actual_documents.first['updated_at']['time']
     end
   end
+
+  sub_test_case 'object_id_keys' do
+    setup do
+      @my_id_str = "507f1f77bcf86cd799439011"
+    end
+
+    def emit_date_documents(d)
+      time = event_time("2011-01-02 13:14:15 UTC")
+      d.feed(time, {'a' => 1, my_id: @my_id_str})
+      time
+    end
+
+    def emit_invalid_date_documents(d)
+      time = event_time("2011-01-02 13:14:15 UTC")
+      d.feed(time, {'a' => 1, my_id: "Invalid ObjectId String"})
+      time
+    end
+
+    def emit_nested_date_documents(d)
+      time = event_time("2011-01-02 13:14:15 UTC")
+      d.feed(time, {'a' => 1, my_id: { 'id': @my_id_str}})
+      time
+    end
+
+    def emit_nested_invalid_date_documents(d)
+      time = event_time("2011-01-02 13:14:15 UTC")
+      d.feed(time, {'a' => 1, 'my_id': { 'id': "Invalid ObjectId String"}})
+      time
+    end
+
+    def test_write_with_object_id_keys
+      d = create_driver(default_config + %[
+        object_id_keys my_id
+      ])
+
+      d.run(default_tag: 'test') do
+        emit_date_documents(d)
+      end
+
+      actual_documents = get_documents
+      object_id_key = d.instance.object_id_keys.first
+      actual_documents.each_with_index { |doc, i|
+        assert_equal(i + 1, doc['a'])
+        assert doc[object_id_key].is_a?(BSON::ObjectId)
+      }
+    end
+
+    def test_write_with_parsed_object_id_key_invalid_string
+      d = create_driver(default_config + %[
+            object_id_keys my_id
+          ])
+
+      d.run(default_tag: 'test') do
+        emit_invalid_date_documents(d)
+      end
+      actual_documents = get_documents
+      assert_nil actual_documents.first['my_id']
+    end
+
+    def test_write_with_date_nested_keys
+      d = create_driver(default_config + %[
+        replace_dot_in_key_with _
+        replace_dollar_in_key_with _
+        object_id_keys $.my_id.id
+      ])
+
+      d.run(default_tag: 'test') do
+        emit_nested_date_documents(d)
+      end
+
+      actual_documents = get_documents
+      actual_documents.each_with_index { |doc, i|
+        assert_equal(i + 1, doc['a'])
+        assert doc['my_id']['id'].is_a?(BSON::ObjectId)
+      }
+    end
+
+    def test_write_with_parsed_date_nested_key_invalid_string
+      d = create_driver(default_config + %[
+            replace_dot_in_key_with _
+            replace_dollar_in_key_with _
+            object_id_keys $.my_id.id
+          ])
+
+      d.run(default_tag: 'test') do
+        emit_nested_invalid_date_documents(d)
+      end
+      actual_documents = get_documents
+      assert_nil actual_documents.first['my_id']['id']
+    end
+  end
 end

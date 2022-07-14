@@ -59,6 +59,10 @@ Use _mongo_ type in match.
       # eg: updated_at: "2020-02-01T08:22:23.780Z" or updated_at: 1580546457010
       date_keys updated_at
 
+      # Specify id fields in record to use MongoDB's BSON ObjectID (Optional) default: nil
+      # eg: my_id: "507f1f77bcf86cd799439011"
+      object_id_keys my_id
+
       # Other buffer configurations here
     </match>
 
