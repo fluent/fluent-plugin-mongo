@@ -1,3 +1,8 @@
+Release 1.6.0 - 2022/07/15
+
+	* Update mongo gem dependency
+	* out_mongo: Add object_id_keys parameter to convert string to Mongo ObjectId
+
 Release 1.5.0 - 2020/11/26
 
 	* out_mongo: Support nested fields in date_keys
