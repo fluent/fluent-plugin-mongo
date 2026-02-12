@@ -1,3 +1,9 @@
+Release 1.6.1 - 2026/02/12
+
+	* out_mongo: Fix RangeError by converting large integers to BSON::Decimal128
+	* gem: add bigdecimal as dependency for Ruby 3.4
+	* Drop support for MongoDB 4.0.
+
 Release 1.6.0 - 2022/07/15
 
 	* Update mongo gem dependency
