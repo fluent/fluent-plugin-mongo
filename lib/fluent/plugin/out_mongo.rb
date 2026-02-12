@@ -351,6 +351,9 @@ module Fluent::Plugin
             replace_key_of_hash(r, /^\$/, @replace_dollar_in_key_with)
           end
         end
+        records.map! do |r|
+          replace_value_of_hash(r)
+        end
 
         get_collection(database, collection, @collection_options).insert_many(records)
       rescue Mongo::Error::BulkWriteError => e
@@ -380,6 +383,24 @@ module Fluent::Plugin
           end
         end
         result
+      else
+        hash_or_array
+      end
+    end
+
+    INT64_MAX = (2 ** 63) - 1
+    def replace_value_of_hash(hash_or_array)
+      case hash_or_array
+      when Array
+        hash_or_array.map { |v| replace_value_of_hash(v) }
+      when Hash
+        hash_or_array.each_pair { |k, v| hash_or_array[k] = replace_value_of_hash(v) }
+      when Integer
+        if hash_or_array > INT64_MAX
+          BSON::Decimal128.new(hash_or_array.to_s)
+        else
+          hash_or_array
+        end
       else
         hash_or_array
       end
