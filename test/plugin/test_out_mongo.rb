@@ -249,6 +249,20 @@ class MongoOutputTest < ::Test::Unit::TestCase
     assert_equal({"expireAfterSeconds"=>120.0}, expire_after_hash)
   end
 
+  def test_overflow_integer_value
+    d = create_driver
+    d.run(default_tag: 'test') do
+      time = event_time("2011-01-02 13:14:15 UTC")
+      d.feed(time, {'overflow' => (2 ** 63)})
+      d.feed(time, {'nested' => {'overflow' => (2 ** 63)}})
+      d.feed(time, {'array' => [(2 ** 63)]})
+    end
+    documents = get_documents
+    assert_equal(BSON::Decimal128.new((2 ** 63).to_s), documents[0]['overflow'])
+    assert_equal(BSON::Decimal128.new((2 ** 63).to_s), documents[1]['nested']['overflow'])
+    assert_equal(BSON::Decimal128.new((2 ** 63).to_s), documents[2]['array'][0])
+  end
+
   class WriteWithCollectionPlaceholder < self
     def setup
       @tag = 'custom'
