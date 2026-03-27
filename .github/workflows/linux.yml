@@ -26,12 +26,12 @@ jobs:
 
     name: Ruby ${{ matrix.ruby }} and MongoDB ${{ matrix.mongodb-version }} on ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v3
-    - uses: ruby/setup-ruby@v1
+    - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+    - uses: ruby/setup-ruby@4dc28cf14d77b0afa6832d9765ac422dbf0dfedd # v1.298.0
       with:
         ruby-version: ${{ matrix.ruby }}
     - name: Start MongoDB
-      uses: supercharge/mongodb-github-action@1.8.0
+      uses: supercharge/mongodb-github-action@538a4d2a1041920c47630172445cb688592d6e51 # v1.8.0
       with:
         mongodb-version: ${{ matrix.mongodb-version }}
     - name: unit testing
