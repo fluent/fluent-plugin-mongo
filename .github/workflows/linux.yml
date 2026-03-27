@@ -31,7 +31,7 @@ jobs:
       with:
         ruby-version: ${{ matrix.ruby }}
     - name: Start MongoDB
-      uses: supercharge/mongodb-github-action@538a4d2a1041920c47630172445cb688592d6e51 # v1.8.0
+      uses: supercharge/mongodb-github-action@315db7fe45ac2880b7758f1933e6e5d59afd5e94 # v1.12.1
       with:
         mongodb-version: ${{ matrix.mongodb-version }}
     - name: unit testing
