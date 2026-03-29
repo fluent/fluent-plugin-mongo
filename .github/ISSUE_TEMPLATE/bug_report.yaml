@@ -41,6 +41,7 @@ body:
         - Fluentd version:
         - TD Agent version:
         - fluent-plugin-mongo version:
+        - mongo version:
         - Operating system:
         - Kernel version:
       render: markdown
