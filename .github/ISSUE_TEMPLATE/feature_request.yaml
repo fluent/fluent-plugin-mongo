@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Please check the [README](https://github.com/fluent/fluent-plugin-mongo/blob/master/README.md) first. To help us understand the request, please provide the following information.
+        Please check the [README](https://github.com/fluent/fluent-plugin-mongo/blob/master/README.rdoc) first. To help us understand the request, please provide the following information.
   - type: textarea
     id: description
     attributes:
