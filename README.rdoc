@@ -17,6 +17,17 @@ The gem is hosted at {Rubygems.org}[http://rubygems.org]. You can install the ge
 
     $ fluent-gem install fluent-plugin-mongo
 
+=== For Windows users
+
+This plugin depends on the C extension library (such as `bson` gem) which requires a C compiler to install.
+
+If you are using Windows, you must install the {MSYS2}[https://www.msys2.org/] development toolchain before installing this plugin:
+
+1. Run the following command in your command prompt:
+    $ ridk install
+2. Select option `3` (MSYS2 and MINGW development toolchain).
+3. Once the compiler installation is complete, run the `ridk exec fluent-gem install fluent-plugin-mongo` command.
+
 = Plugins
 
 == Output plugin
