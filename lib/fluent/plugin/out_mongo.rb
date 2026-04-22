@@ -186,7 +186,7 @@ module Fluent::Plugin
     end
 
     def shutdown
-      @client.close
+      @client&.close
       super
     end
 
