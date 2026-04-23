@@ -77,7 +77,7 @@ class MongoTailInputTest < Test::Unit::TestCase
       options = {}
       options[:database] = database_name
       @client = ::Mongo::Client.new(["localhost:#{port}"], options)
-      @time = Time.now
+      @time = Time.at(Time.now.to_i)
       Timecop.freeze(@time)
     end
 
@@ -114,7 +114,7 @@ class MongoTailInputTest < Test::Unit::TestCase
         time_key time
       ])
       d.run(expect_records: 1, timeout: 5) do
-        @client[collection_name].insert_one({message: "test", tag: "user.defined", time: Time.at(Fluent::Engine.now)})
+        @client[collection_name].insert_one({message: "test", tag: "user.defined", time: Time.at(Fluent::Engine.now.to_i)})
       end
       events = d.events
       assert_equal "user.defined", events[0][0]
