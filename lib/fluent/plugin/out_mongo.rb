@@ -359,6 +359,9 @@ module Fluent::Plugin
       rescue Mongo::Error::BulkWriteError => e
         log.warn "#{records.size - e.result["n_inserted"]} documents are not inserted. Maybe these documents are invalid as a BSON."
         forget_collection(collection)
+      rescue Mongo::Error::MaxBSONSize => e
+        log.warn e
+        raise Fluent::UnrecoverableError, e
       rescue ArgumentError => e
         log.warn e
       end
