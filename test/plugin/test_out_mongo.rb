@@ -229,8 +229,6 @@ class MongoOutputTest < ::Test::Unit::TestCase
       @type mongo
       connection_string mongodb://localhost:#{port}/#{database_name}
       collection #{collection_name}
-      capped
-      capped_size 100
       expire_after 120
     ])
     assert_equal("mongodb://localhost:#{port}/#{database_name}", d.instance.connection_string)
