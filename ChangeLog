@@ -1,3 +1,9 @@
+Release 1.6.2 - 2026/04/23
+
+	* out_mongo: prevent infinite retry on MaxBSONSize error (#206)
+	* out_mongo: fix NoMethodError during gracefulReload (#205)
+	* Add support for MongoDB 6.0, 7.0, 8.0 (#177)
+
 Release 1.6.1 - 2026/02/12
 
 	* out_mongo: Fix RangeError by converting large integers to BSON::Decimal128
