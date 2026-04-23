@@ -622,4 +622,25 @@ class MongoOutputTest < ::Test::Unit::TestCase
       assert_nil actual_documents.first['my_id']['id']
     end
   end
+
+  def test_unrecoverable_error_on_huge_document
+    d = create_driver(%[
+      @type mongo
+      database test
+      collection test_unrecoverable
+      <buffer>
+        chunk_limit_size 30m
+      </buffer>
+    ])
+
+    d.run(default_tag: 'test') do
+      time = event_time("2011-01-02 13:14:15 UTC")
+      # The document size exceeds the 16MB limit of BSON, so it should raise an UnrecoverableError.
+      d.feed(time, {'msg' => 'x' * (20 * 1024 * 1024)})
+    end
+
+    logs = d.logs.join("\n")
+    assert_match(/got unrecoverable error.*Fluent::UnrecoverableError/, logs)
+    assert_match(/MaxBSONSize/, logs)
+  end
 end
