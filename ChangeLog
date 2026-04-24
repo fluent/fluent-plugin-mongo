@@ -1,3 +1,7 @@
+Release 1.6.3 - 2026/04/24
+
+    * out_mongo: Add `ordered` parameter (#210)
+
 Release 1.6.2 - 2026/04/23
 
 	* out_mongo: prevent infinite retry on MaxBSONSize error (#206)
