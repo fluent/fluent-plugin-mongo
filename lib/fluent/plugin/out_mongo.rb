@@ -65,7 +65,7 @@ module Fluent::Plugin
     config_param :ssl_verify, :bool, default: false
     config_param :ssl_ca_cert, :string, default: nil
 
-    desc "Whether the operations should be executed in order"
+    desc "Whether the operations should be executed in order. If false, continues to insert remaining documents even if some inserts fail."
     config_param :ordered, :bool, default: true
 
     config_section :buffer do
