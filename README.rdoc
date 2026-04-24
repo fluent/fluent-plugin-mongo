@@ -74,7 +74,8 @@ Use _mongo_ type in match.
       # eg: my_id: "507f1f77bcf86cd799439011"
       object_id_keys my_id
 
-      # Specify whether the operations should be executed in order
+      # Specify whether the operations should be executed in order (default: true).
+      # If false, continues to insert remaining documents even if some inserts fail.
       ordered false
 
       # Other buffer configurations here
