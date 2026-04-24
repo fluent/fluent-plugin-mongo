@@ -77,13 +77,11 @@ class MongoTailInputTest < Test::Unit::TestCase
       options = {}
       options[:database] = database_name
       @client = ::Mongo::Client.new(["localhost:#{port}"], options)
-      @time = Time.at(Time.now.to_i)
-      Timecop.freeze(@time)
+      @time = Time.parse('2026-01-01 00:00:00 +0900')
     end
 
     def teardown_mongod
       @client[collection_name].drop
-      Timecop.return
     end
 
     def test_emit
@@ -114,7 +112,7 @@ class MongoTailInputTest < Test::Unit::TestCase
         time_key time
       ])
       d.run(expect_records: 1, timeout: 5) do
-        @client[collection_name].insert_one({message: "test", tag: "user.defined", time: Time.at(Fluent::Engine.now.to_i)})
+        @client[collection_name].insert_one({message: "test", tag: "user.defined", time: @time})
       end
       events = d.events
       assert_equal "user.defined", events[0][0]
