@@ -67,6 +67,23 @@ class MongoOutputTest < ::Test::Unit::TestCase
     assert_equal({capped: true, size: 100}, d.instance.collection_options)
     assert_equal({ssl: false, write: {j: false}}, d.instance.client_options)
     assert_nil d.instance.connection_string
+    assert_true d.instance.ordered
+  end
+
+  def test_configure_with_disabled_ordered
+    d = create_driver(%[
+      @type mongo
+      database fluent_test
+      collection test_collection
+
+      ordered false
+    ])
+
+    assert_equal('fluent_test', d.instance.database)
+    assert_equal('test_collection', d.instance.collection)
+    assert_equal('localhost', d.instance.host)
+    assert_equal(port, d.instance.port)
+    assert_false d.instance.ordered
   end
 
   def test_configure_with_connection_string
@@ -245,6 +262,24 @@ class MongoOutputTest < ::Test::Unit::TestCase
     indexes = get_indexes()
     expire_after_hash = indexes.map {|e| e.select{|k, v| k == "expireAfterSeconds"} }.reject{|e| e.empty?}.first
     assert_equal({"expireAfterSeconds"=>120.0}, expire_after_hash)
+  end
+
+  def test_write_with_disabled_ordered
+    d = create_driver(%[
+      @type mongo
+      connection_string mongodb://localhost:#{port}/#{database_name}
+      collection #{collection_name}
+      ordered false
+    ])
+
+    mock_collection = Object.new
+    # Check the expected value is given as ordered parameter
+    mock(mock_collection).insert_many(anything, ordered: false)
+    stub(d.instance).get_collection { mock_collection }
+
+    d.run(default_tag: 'test') do
+      emit_documents(d)
+    end
   end
 
   def test_overflow_integer_value
