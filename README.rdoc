@@ -74,6 +74,9 @@ Use _mongo_ type in match.
       # eg: my_id: "507f1f77bcf86cd799439011"
       object_id_keys my_id
 
+      # Specify whether the operations should be executed in order
+      ordered false
+
       # Other buffer configurations here
     </match>
 

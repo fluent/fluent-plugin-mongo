@@ -65,6 +65,8 @@ module Fluent::Plugin
     config_param :ssl_verify, :bool, default: false
     config_param :ssl_ca_cert, :string, default: nil
 
+    desc "Whether the operations should be executed in order"
+    config_param :ordered, :bool, default: true
 
     config_section :buffer do
       config_set_default :@type, DEFAULT_BUFFER_TYPE
@@ -355,7 +357,7 @@ module Fluent::Plugin
           replace_value_of_hash(r)
         end
 
-        get_collection(database, collection, @collection_options).insert_many(records)
+        get_collection(database, collection, @collection_options).insert_many(records, ordered: @ordered)
       rescue Mongo::Error::BulkWriteError => e
         log.warn "#{records.size - e.result["n_inserted"]} documents are not inserted. Maybe these documents are invalid as a BSON."
         forget_collection(collection)
