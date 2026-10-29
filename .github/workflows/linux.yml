@@ -11,7 +11,7 @@ jobs:
     uses: ruby/actions/.github/workflows/ruby_versions.yml@master
     with:
       engine: cruby
-      min_version: 2.7
+      min_version: 3.3
   build:
     needs: ruby-versions
     runs-on: ${{ matrix.os }}
@@ -31,9 +31,10 @@ jobs:
       with:
         ruby-version: ${{ matrix.ruby }}
     - name: Start MongoDB
-      uses: supercharge/mongodb-github-action@315db7fe45ac2880b7758f1933e6e5d59afd5e94 # v1.12.1
+      uses: supercharge/mongodb-github-action@89d1ecb837145f486898e235478a7e267f68c44e # main (mongodb-extra-env is not released yet)
       with:
         mongodb-version: ${{ matrix.mongodb-version }}
+        mongodb-extra-env: GLIBC_TUNABLES=glibc.pthread.rseq=1
     - name: unit testing
       env:
         CI: true
